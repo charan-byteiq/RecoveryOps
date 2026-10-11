@@ -1,0 +1,34 @@
+# Branch Overview
+
+[Overview](http://localhost:8080/)
+[Analytics](http://localhost:8080/customer-analytics)
+[Worklist](http://localhost:8080/worklist)
+
+# Branch Network Analytics
+Total branches
+6
+Odisha state network
+Avg collection rate
+78%
+Across all branches
+Total recovered
+₹23.5Cr
+Q3 · Jul–Sep
+Total accounts
+46,390
+Active portfolio
+
+## Branch performance ranking
+Key operational metrics across the network
+Central region
+78%
+2 branches
+South region
+82%
+1 branch
+North region
+77%
+2 branches
+West region
+76%
+1 branch
