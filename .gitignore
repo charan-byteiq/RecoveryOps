@@ -39,6 +39,15 @@ coverage/
 # Typescript
 *.tsbuildinfo
 
+# Python
+.venv/
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+
+
 # Editor / OS
 .vscode/
 .idea/
