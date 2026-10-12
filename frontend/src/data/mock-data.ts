@@ -1,8 +1,24 @@
-import type { Branch } from "@/hooks/branch-context";
+export interface MockBranch {
+  id: string;
+  name: string;
+  region: string;
+  state: string;
+  accounts: number;
+  collectionRate: number;
+  recovered: string;
+  cureRate: number;
+  contactRate: number;
+  ptpKept: number;
+  avgDaysToResolve: number;
+  collectionsPerAgent: string;
+  escalationRate: number;
+  firstContact: string;
+  outreachPath: string;
+}
 
 /* ─────────────── Branch Network (US Regional Network) ─────────────── */
 
-export const branches: Branch[] = [
+export const branches: MockBranch[] = [
   { id: "TPA", name: "Tampa Branch", region: "Southeast", state: "FL", accounts: 12480, collectionRate: 71, recovered: "$4.8M", cureRate: 58, contactRate: 61, ptpKept: 47, avgDaysToResolve: 27, collectionsPerAgent: "$18.4K", escalationRate: 14, firstContact: "Day 5", outreachPath: "SMS → Phone" },
   { id: "DAL", name: "Dallas Branch", region: "South Central", state: "TX", accounts: 9840, collectionRate: 84, recovered: "$6.2M", cureRate: 71, contactRate: 79, ptpKept: 68, avgDaysToResolve: 21, collectionsPerAgent: "$22.1K", escalationRate: 9, firstContact: "Day 2", outreachPath: "SMS → Phone → Field" },
   { id: "ATL", name: "Atlanta Branch", region: "Southeast", state: "GA", accounts: 7620, collectionRate: 82, recovered: "$4.1M", cureRate: 69, contactRate: 76, ptpKept: 65, avgDaysToResolve: 22, collectionsPerAgent: "$20.8K", escalationRate: 11, firstContact: "Day 2", outreachPath: "Phone → SMS → Field" },

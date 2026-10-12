@@ -19,9 +19,9 @@ function isValidBranch(value: unknown): value is Branch {
     typeof value === "object" &&
     value != null &&
     "id" in value &&
-    typeof (value as Record<string, unknown>).id === "number" &&
+    typeof (value as Record<string, unknown>)["id"] === "number" &&
     "sourceBranchCode" in value &&
-    typeof (value as Record<string, unknown>).sourceBranchCode === "string"
+    typeof (value as Record<string, unknown>)["sourceBranchCode"] === "string"
   );
 }
 
