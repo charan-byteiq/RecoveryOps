@@ -644,139 +644,7 @@ function BranchRootCauseContent({
     };
   }, [activeKpi.id, branchData, comparedBranch]);
 
-  // Point-wise Key Summary for selected KPI
-  const keySummaryPoints = useMemo(() => {
-    const kpiId = activeKpi.id;
-    const branchName = branchData.name;
-    const compName = comparedBranch.name;
 
-    if (kpiId === "collection_efficiency") {
-      const compVal = comparedBranch.collectionRate;
-      const peerVal = peerCollectionRate;
-      const bVal = branchData.collectionRate;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Achieves ${compVal}% collection efficiency.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Records ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} leads ${compName} by ${diffComp} pts in collection efficiency.`
-            : `${branchName} trails ${compName} by ${Math.abs(diffComp)} pts in collection efficiency.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: isAheadComp
-            ? `Sustain Day 2 outreach tempo and scale digital UPI payment links across all accounts.`
-            : `Help ${branchName} accelerate initial borrower outreach from Day 5 to Day 2 to close the recovery gap.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "avg_resolution_days") {
-      const compVal = comparedBranch.avgDaysToResolve;
-      const peerVal = 22;
-      const bVal = branchData.avgDaysToResolve;
-      const diffComp = bVal - compVal;
-      return [
-        { label: `${compName}`, text: `Resolves accounts in ${compVal} days.` },
-        { label: `Regional Average`, text: `${peerVal} days.` },
-        { label: `${branchName}`, text: `Takes ${bVal} days.` },
-        {
-          label: `Key Finding`,
-          text: diffComp > 0
-            ? `${branchName} takes ${diffComp} days longer than ${compName}.`
-            : `${branchName} resolves accounts ${Math.abs(diffComp)} days faster than ${compName}.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: diffComp > 0
-            ? `Help ${branchName} resolve accounts faster.`
-            : `Maintain swift resolution velocity and prevent chronic rollover.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "ptp_kept") {
-      const compVal = comparedBranch.ptpKept;
-      const peerVal = mockNetworkTotals.avgPtpKept;
-      const bVal = branchData.ptpKept;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Maintains a ${compVal}% promise fulfillment rate.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Fulfills ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} leads ${compName} by ${diffComp} pts in kept payment promises.`
-            : `${branchName} trails ${compName} by ${Math.abs(diffComp)} pts in kept payment promises.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: `Help ${branchName} enforce a strict 72-hour promise horizon and automated payment reminders.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "contact_rate") {
-      const compVal = comparedBranch.contactRate;
-      const peerVal = mockNetworkTotals.avgContactRate;
-      const bVal = branchData.contactRate;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Reaches ${compVal}% of delinquent borrowers.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Contacts ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} reaches ${diffComp} pts more borrowers than ${compName}.`
-            : `${branchName} connects with ${Math.abs(diffComp)} pts fewer borrowers than ${compName}.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: `Help ${branchName} shift 45% of outbound agent dialing rosters to the 4:00 PM–7:30 PM evening window.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    // dpd_distribution
-    const getDpd = (id: string) => (id === "TPA" ? 38 : id === "DAL" ? 21 : id === "ATL" ? 24 : id === "PHX" ? 27 : id === "CLT" ? 29 : 32);
-    const compVal = getDpd(comparedBranch.id);
-    const peerVal = 31;
-    const bVal = getDpd(branchData.id);
-    const diffComp = bVal - compVal;
-    return [
-      { label: `${compName}`, text: `Maintains ${compVal}% concentration in 30+ DPD buckets.` },
-      { label: `Regional Average`, text: `${peerVal}%.` },
-      { label: `${branchName}`, text: `Carries ${bVal}%.` },
-      {
-        label: `Key Finding`,
-        text: diffComp > 0
-          ? `${branchName} holds ${diffComp} pts higher chronic delinquency concentration than ${compName}.`
-          : `${branchName} maintains ${Math.abs(diffComp)} pts cleaner portfolio than ${compName}.`,
-        isHighlight: true,
-      },
-      {
-        label: `Recommended Focus`,
-        text: `Help ${branchName} deploy proactive restructuring plans before accounts cross 30 DPD.`,
-        isFocus: true,
-      },
-    ];
-  }, [activeKpi.id, branchData, comparedBranch, peerCollectionRate]);
 
   return (
     <AppShell
@@ -1172,30 +1040,18 @@ function BranchRootCauseContent({
           </div>
         </GlassCard>
 
-        {/* 3. KEY SUMMARY: BELOW MAIN LAYOUT, FULL-WIDTH ROUNDED SECTION */}
+        {/* 3. KEY SUMMARY: STATIC CONCLUSION PARAGRAPH */}
         <GlassCard className="p-5 md:p-6 rounded-2xl border border-primary/20 bg-primary/5 shadow-2xs">
           <div className="flex items-center gap-2 mb-3.5 pb-2.5 border-b border-primary/15">
             <Target className="size-4 text-primary" />
             <h3 className="text-xs font-bold uppercase tracking-[.14em] text-primary">
-              Key Summary · {activeKpi.name}
+              Key Summary
             </h3>
           </div>
 
-          <div className="space-y-2.5">
-            {keySummaryPoints.map((pt, index) => (
-              <div key={index} className="flex items-start gap-2.5 text-xs sm:text-sm">
-                <span className="flex size-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                <div className="leading-relaxed">
-                  <strong className={`font-bold ${pt.isHighlight || pt.isFocus ? "text-primary" : "text-foreground"}`}>
-                    {pt.label}:
-                  </strong>{" "}
-                  <span className={pt.isHighlight || pt.isFocus ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                    {pt.text}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+          <p className="text-xs sm:text-sm text-foreground/90 leading-relaxed font-normal">
+            The root-cause diagnosis for {branchData.name} demonstrates that while foundational borrower outreach and promise fulfillment rates remain active, the primary operational deficit stems from delays in early-stage engagement and underutilized digital payment channels. Bridging the performance gap against regional pacesetters requires transitioning outreach cadences forward to an immediate Day 2 standard, enforcing strict 72-hour promise horizons, and accelerating automated digital repayment options across all active files. Executing these coordinated operational levers curbs premature rollover into chronic delinquency buckets and establishes sustainable, long-term portfolio recovery performance.
+          </p>
         </GlassCard>
       </div>
     </AppShell>

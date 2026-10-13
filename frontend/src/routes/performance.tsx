@@ -491,7 +491,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
           <div className="flex flex-col justify-between gap-3 border-b pb-4 sm:flex-row sm:items-center">
             <div>
               <h2 className="font-bold text-display text-base sm:text-lg">
-                Core KPI Performance Comparison (Last Month vs. This Month)
+                Core KPI Performance Comparison (Prior Month vs. Preceding Month)
               </h2>
               <p className="text-xs text-muted-foreground">
                 Side-by-side progression across the 5 primary operational dimensions for {branch.name}
@@ -502,11 +502,11 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
             <div className="flex items-center gap-4 text-xs font-semibold">
               <div className="flex items-center gap-2 text-muted-foreground">
                 <span className="size-3 rounded-xs border border-dashed border-border/90 bg-muted/20" />
-                <span className="font-normal">Last Month (No Data)</span>
+                <span className="font-normal">Prior Month (No Data)</span>
               </div>
               <div className="flex items-center gap-2">
                 <span className="size-3 rounded-xs bg-primary shadow-xs" />
-                <span className="text-primary font-bold">This Month</span>
+                <span className="text-primary font-bold">Preceding Month</span>
               </div>
             </div>
           </div>
@@ -561,7 +561,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                         >
                           {/* Tooltip */}
                           <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-card border px-1.5 py-0.5 text-[9px] font-medium text-muted-foreground shadow-md opacity-0 transition-opacity duration-150 group-hover/bar:opacity-100 z-30">
-                            Last Month: No Data
+                            Prior Month: No Data
                           </div>
                         </div>
                         <span className="mt-1.5 text-[10px] font-medium text-muted-foreground/60">
@@ -569,7 +569,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                         </span>
                       </div>
 
-                      {/* This Month Bar (Blue with glowing gradient) */}
+                      {/* Preceding Month Bar (Blue with glowing gradient) */}
                       <div className="group/bar relative flex flex-col items-center justify-end h-full">
                         <div
                           className="relative w-6 sm:w-7.5 rounded-t bg-primary bg-gradient-to-t from-blue-700 via-primary to-blue-400 shadow-[0_0_10px_rgba(37,99,235,0.35)] transition-all duration-700 ease-out hover:brightness-110"
@@ -580,7 +580,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                         >
                           {/* Tooltip */}
                           <div className="pointer-events-none absolute -top-7 left-1/2 -translate-x-1/2 whitespace-nowrap rounded-md bg-primary text-primary-foreground px-1.5 py-0.5 text-[9px] font-bold shadow-md opacity-0 transition-opacity duration-150 group-hover/bar:opacity-100 z-30">
-                            This: {kpi.thisMonth}{kpi.unit}
+                            Preceding: {kpi.thisMonth}{kpi.unit}
                           </div>
                         </div>
                         <span className="mt-1.5 text-[10px] font-bold text-primary">
@@ -592,8 +592,8 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
 
                   {/* Footing comparison labels */}
                   <div className="mt-2 flex items-center justify-between border-t border-border/50 pt-2 text-[10px]">
-                    <span className="text-muted-foreground/70">Last Mo: —</span>
-                    <span className="font-bold text-primary">This Mo: {kpi.thisMonth}{kpi.unit}</span>
+                    <span className="text-muted-foreground/70">Prior Mo: —</span>
+                    <span className="font-bold text-primary">Preceding Mo: {kpi.thisMonth}{kpi.unit}</span>
                   </div>
                 </div>
               );
@@ -633,16 +633,16 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
             </div>
 
             {/* Main Interactive Grid */}
-            <div className="mt-6 grid gap-6 lg:grid-cols-12 items-start">
+            <div className="mt-6 grid gap-6 lg:grid-cols-12 items-stretch">
               {/* Left Column: Interactive Donut Chart + Bucket Selectors (5 cols) */}
-              <div className="lg:col-span-5 flex flex-col items-center justify-between rounded-2xl border border-border/70 bg-card/50 p-4.5 shadow-2xs">
-                <div className="w-full flex items-center justify-between border-b pb-2.5">
+              <div className="lg:col-span-5 flex flex-col justify-between rounded-2xl border border-border/80 bg-card/60 p-5 shadow-xs h-full">
+                <div className="w-full flex items-center justify-between border-b pb-3.5">
                   <span className="text-xs font-bold text-foreground">Delinquency Segment Mix</span>
                   <span className="text-[10px] text-muted-foreground font-medium">Click slice to diagnose</span>
                 </div>
 
                 {/* Donut Chart with active slice & central badge */}
-                <div className="relative my-3 h-52 w-full flex items-center justify-center">
+                <div className="relative my-auto py-3 h-52 w-full flex items-center justify-center">
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart key={dpdDonut.key}>
                       <RechartsTooltip
@@ -695,7 +695,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                 </div>
 
                 {/* Interactive Bucket Cards / Selectors */}
-                <div className="w-full space-y-1.5 border-t pt-3">
+                <div className="w-full space-y-2 border-t pt-3.5">
                   {pieData.map((d, idx) => {
                     const isSelected = idx === activeBucketIndex;
                     const insight = dpdBucketInsights[idx] ?? dpdBucketInsights[0]!;
@@ -705,7 +705,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                       <button
                         key={d.name}
                         onClick={() => setActiveBucketIndex(idx)}
-                        className={`w-full flex items-center justify-between rounded-xl px-3 py-2 text-xs transition-all duration-150 ${
+                        className={`w-full flex items-center justify-between rounded-xl px-3 py-2.5 text-xs transition-all duration-150 ${
                           isSelected
                             ? "bg-primary/10 border border-primary/30 shadow-xs ring-1 ring-primary/20"
                             : "bg-card/60 border border-border/70 hover:bg-card hover:border-border"
@@ -738,8 +738,8 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                 </div>
               </div>
 
-              {/* Right Column: Selected Bucket Deep Dive (Point-to-Point Insights & Frontline Playbook) (7 cols) */}
-              <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl border border-border/80 bg-card/60 p-5 shadow-xs space-y-5">
+              {/* Right Column: Selected Bucket Deep Dive (Point-to-Point Insights) (7 cols) */}
+              <div className="lg:col-span-7 flex flex-col justify-between rounded-2xl border border-border/80 bg-card/60 p-5 shadow-xs h-full space-y-5">
                 {/* Bucket Header */}
                 <div>
                   <div className="flex flex-wrap items-center justify-between gap-2 border-b pb-3.5">
@@ -765,6 +765,13 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                       <span className="rounded-lg border border-border/80 bg-card/80 px-2.5 py-1 text-[11px] font-semibold text-foreground">
                         SLA: <strong className="text-primary">{currentInsight.sla}</strong>
                       </span>
+                      <Link
+                        to="/root-cause"
+                        search={{ driver: "dpd_distribution" }}
+                        className="inline-flex items-center gap-1.5 shrink-0 rounded-lg bg-primary px-2.5 py-1 text-[11px] font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition"
+                      >
+                        Examine Root Cause <ArrowRight className="size-3" />
+                      </Link>
                     </div>
                   </div>
 
@@ -795,7 +802,7 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                 </div>
 
                 {/* Point-to-Point One-Liners (Point-by-Point Cards) */}
-                <div className="space-y-2.5">
+                <div className="space-y-2.5 my-auto">
                   <h4 className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
                     Point-to-Point Key Insights & Frontline Diagnosis
                   </h4>
@@ -817,26 +824,6 @@ function BranchPerformanceContent({ branch }: { branch: BranchSummary }) {
                       </div>
                     ))}
                   </div>
-                </div>
-
-                {/* Prescribed Resolution Playbook Footer */}
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                  <div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
-                      Prescribed Action Protocol
-                    </span>
-                    <p className="text-xs font-semibold text-foreground mt-0.5">
-                      {currentInsight.recommendation}
-                    </p>
-                  </div>
-
-                  <Link
-                    to="/root-cause"
-                    search={{ driver: "dpd_distribution" }}
-                    className="inline-flex items-center gap-1.5 shrink-0 rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition"
-                  >
-                    Examine Root Cause <ArrowRight className="size-3.5" />
-                  </Link>
                 </div>
               </div>
             </div>
