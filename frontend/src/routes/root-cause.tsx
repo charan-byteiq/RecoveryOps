@@ -1395,7 +1395,7 @@ function BranchRootCauseContent({
           </div>
         </GlassCard>
 
-        {/* 3. KEY SUMMARY: BELOW MAIN LAYOUT, FULL-WIDTH ROUNDED SECTION */}
+        {/* 3. KEY SUMMARY: STATIC CONCLUSION PARAGRAPH */}
         <GlassCard className="p-5 md:p-6 rounded-2xl border border-primary/20 bg-primary/5 shadow-2xs">
           <div className="flex items-center gap-2 mb-3.5 pb-2.5 border-b border-primary/15">
             <Target className="size-4 text-primary" />
