@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import UTC, datetime
 from decimal import Decimal
 from typing import Any
 
@@ -25,9 +25,10 @@ class Branch(Base):
     source_branch_code: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)
     region: Mapped[str] = mapped_column(String, nullable=False)
+    state: Mapped[str | None] = mapped_column(String, nullable=True)
     active: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
 
 
@@ -56,7 +57,7 @@ class IngestionBatch(Base):
     period_end: Mapped[str | None] = mapped_column(Date, nullable=True)
     as_of_date: Mapped[str] = mapped_column(Date, nullable=False)
     loaded_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
     is_demo: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
     notes: Mapped[str | None] = mapped_column(String, nullable=True)
@@ -84,7 +85,7 @@ class BranchMetricSnapshot(Base):
     period_end: Mapped[str | None] = mapped_column(Date, nullable=True)
     as_of_date: Mapped[str] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
 
 
@@ -106,7 +107,7 @@ class BranchDpdSnapshot(Base):
     portfolio_share: Mapped[Decimal | None] = mapped_column(Numeric(10, 6), nullable=True)
     as_of_date: Mapped[str] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
 
 
@@ -129,7 +130,30 @@ class BranchSegmentSnapshot(Base):
     account_count: Mapped[int | None] = mapped_column(Integer, nullable=True)
     as_of_date: Mapped[str] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
+    )
+
+
+class BranchRootCauseDriver(Base):
+    __tablename__ = "branch_root_cause_drivers"
+    __table_args__ = (
+        UniqueConstraint(
+            "branch_id", "metric_code", "as_of_date",
+            name="branch_root_cause_driver_unique",
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    branch_id: Mapped[int] = mapped_column(ForeignKey("branches.id"), nullable=False)
+    batch_id: Mapped[int] = mapped_column(ForeignKey("ingestion_batches.id"), nullable=False)
+    metric_code: Mapped[str] = mapped_column(String, nullable=False)
+    value: Mapped[Decimal | None] = mapped_column(Numeric(18, 6), nullable=True)
+    unit: Mapped[str] = mapped_column(String, nullable=False)
+    availability: Mapped[str] = mapped_column(String, nullable=False, default="available")
+    contributing_segments: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
+    as_of_date: Mapped[str] = mapped_column(Date, nullable=False)
+    created_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
 
 
@@ -143,6 +167,6 @@ class BranchInsight(Base):
     evidence: Mapped[list[dict[str, Any]]] = mapped_column(JSON, nullable=False, default=list)
     model_version: Mapped[str | None] = mapped_column(String, nullable=True)
     generated_at: Mapped[datetime | None] = mapped_column(
-        DateTime(timezone=True), nullable=True, default=datetime.utcnow
+        DateTime(timezone=True), nullable=True, default=lambda: datetime.now(UTC)
     )
     as_of_date: Mapped[str] = mapped_column(Date, nullable=False)

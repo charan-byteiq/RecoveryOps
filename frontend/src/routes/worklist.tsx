@@ -7,9 +7,15 @@ export const Route = createFileRoute("/worklist")({
   head: () => ({
     meta: [
       { title: "Priority Worklist — RecoveryOps" },
-      { name: "description", content: "Prioritized collections worklist and frontline execution workspace." },
+      {
+        name: "description",
+        content: "Prioritized collections worklist and frontline execution workspace.",
+      },
       { property: "og:title", content: "Priority Worklist — RecoveryOps" },
-      { property: "og:description", content: "Prioritized collections worklist and frontline execution workspace." },
+      {
+        property: "og:description",
+        content: "Prioritized collections worklist and frontline execution workspace.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],

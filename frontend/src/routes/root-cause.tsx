@@ -1,6 +1,7 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState, useMemo } from "react";
+import type { LucideIcon } from "lucide-react";
 import {
   ArrowDown,
   ArrowRight,
@@ -21,11 +22,8 @@ import {
 import { AppShell } from "@/components/app-shell";
 import { GlassCard, MetricBar, Status } from "@/components/ui";
 import { useBranch } from "@/hooks/branch-context";
-import { api, type BranchSummary } from "@/lib/api";
-import {
-  branches as mockBranches,
-  networkTotals as mockNetworkTotals,
-} from "@/data/mock-data";
+import { useDate } from "@/hooks/date-context";
+import { api, formatMetricValue, getMetric, type BranchSummary, type MetricValue } from "@/lib/api";
 
 export const Route = createFileRoute("/root-cause")({
   validateSearch: (s: Record<string, unknown>): { driver?: string | undefined } =>
@@ -33,8 +31,15 @@ export const Route = createFileRoute("/root-cause")({
   head: () => ({
     meta: [
       { title: "Root Cause Diagnosis & Strategic Decision Engine — RecoveryOps" },
-      { property: "og:title", content: "Root Cause Diagnosis & Strategic Decision Engine — RecoveryOps" },
-      { property: "og:description", content: "Key insights, 5 core KPI root-cause summaries, segment breakdowns, and tactical playbooks." },
+      {
+        property: "og:title",
+        content: "Root Cause Diagnosis & Strategic Decision Engine — RecoveryOps",
+      },
+      {
+        property: "og:description",
+        content:
+          "Key insights, 5 core KPI root-cause summaries, segment breakdowns, and tactical playbooks.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -61,7 +66,7 @@ interface CoreKpiDriverModel {
   id: string;
   name: string;
   shortName: string;
-  icon: any;
+  icon: LucideIcon;
   branchVal: string;
   peerVal: string;
   delta: string;
@@ -82,43 +87,85 @@ interface CoreKpiDriverModel {
   projectedPayoff: string;
 }
 
+/** Convert a backend metric value to a display number. Percent values are already fractions. */
+function metricToNumber(m: MetricValue | undefined): number | null {
+  if (!m || m.value == null || m.availability !== "available") return null;
+  return m.unit === "percent" ? m.value * 100 : m.value;
+}
+
+/** Format a display number with its unit as used by the Root Cause UI. */
+function formatDecimal(value: number, maximumFractionDigits = 2): string {
+  return value.toFixed(maximumFractionDigits).replace(/\.0+$|(?<=\.\d)0+$/, "");
+}
+
+function formatPercent(value: number): string {
+  return `${formatDecimal(value)}%`;
+}
+
+function formatPoints(value: number, signed = false): string {
+  return `${signed && value >= 0 ? "+" : ""}${formatDecimal(value)} pts`;
+}
+
+function formatDays(value: number, suffix = "d"): string {
+  return `${formatDecimal(value)}${suffix}`;
+}
+
+function formatNumber(value: number | null, unit: string): string {
+  if (value == null) return "—";
+  if (unit === "percent" || unit === "%") return formatPercent(value);
+  if (unit === "days") return formatDays(value);
+  return formatDecimal(value);
+}
+
+/** Build a one-line display delta between two display numbers. */
+function formatDelta(branch: number | null, peer: number | null, unit: string): string {
+  if (branch == null || peer == null) return "—";
+  const delta = branch - peer;
+  return unit === "days" ? formatDays(delta, "d") : formatPoints(delta, true);
+}
+
+/** Determine a tone from a numeric delta. For days, negative delta is good. */
+function deltaTone(delta: number, unit: string): "danger" | "success" | "warning" {
+  if (delta === 0) return "warning";
+  const isGood = unit === "days" ? delta < 0 : delta > 0;
+  return isGood ? "success" : "danger";
+}
+
 function RootCauseRoute() {
   const { selectedBranch, hasBranch, selectBranch } = useBranch();
+  const { selectedDate } = useDate();
   const search = Route.useSearch();
 
   const branchesQuery = useQuery({
-    queryKey: ["branches"],
-    queryFn: () => api.getBranches(),
+    queryKey: ["branches", selectedDate],
+    queryFn: () => api.getBranches(selectedDate),
     enabled: !hasBranch,
   });
 
   if (!hasBranch || !selectedBranch) {
-    const list =
-      branchesQuery.data?.data && branchesQuery.data.data.length > 0
-        ? branchesQuery.data.data
-        : mockBranches.map(
-            (mb) =>
-              ({
-                id: Number(mb.id.replace(/\D/g, "")) || 1,
-                sourceBranchCode: mb.id,
-                name: mb.name,
-                region: mb.region,
-                metrics: {},
-              } as BranchSummary)
-          );
+    const list = branchesQuery.data?.data ?? [];
 
     return (
-      <AppShell title="Root Cause Diagnosis" section="Branch Level" subtitle="Strategic Decision Engine">
+      <AppShell
+        title="Root Cause Diagnosis"
+        section="Branch Level"
+        subtitle="Strategic Decision Engine"
+      >
         <div className="mx-auto max-w-[680px] py-16 text-center">
           <div className="mx-auto grid size-16 place-items-center rounded-2xl bg-primary/10 text-primary shadow-sm">
             <Sparkles className="size-8" />
           </div>
-          <h2 className="mt-5 text-2xl font-bold text-display">Select a Branch to Diagnose Root Causes</h2>
+          <h2 className="mt-5 text-2xl font-bold text-display">
+            Select a Branch to Diagnose Root Causes
+          </h2>
           <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-            The Strategic Decision Engine evaluates direct gap drivers and operational levers across the 5 core KPIs. Choose a regional branch below to open its diagnostic workbench.
+            The Strategic Decision Engine evaluates direct gap drivers and operational levers across
+            the 5 core KPIs. Choose a regional branch below to open its diagnostic workbench.
           </p>
           <div className="mt-8 grid gap-2.5 sm:grid-cols-2">
-            {branchesQuery.isLoading && <p className="text-sm text-muted-foreground col-span-2">Loading branches…</p>}
+            {branchesQuery.isLoading && (
+              <p className="text-sm text-muted-foreground col-span-2">Loading branches…</p>
+            )}
             {list.map((b) => (
               <button
                 key={b.sourceBranchCode || b.id}
@@ -126,7 +173,9 @@ function RootCauseRoute() {
                 onClick={() => selectBranch(b)}
               >
                 <div>
-                  <p className="text-sm font-semibold text-foreground group-hover:text-primary transition">{b.name}</p>
+                  <p className="text-sm font-semibold text-foreground group-hover:text-primary transition">
+                    {b.name}
+                  </p>
                   <p className="text-xs text-muted-foreground">{b.region} Region</p>
                 </div>
                 <ChevronRight className="size-4 text-muted-foreground group-hover:text-primary group-hover:translate-x-0.5 transition" />
@@ -148,26 +197,112 @@ function BranchRootCauseContent({
   branch: BranchSummary;
   initialDriver?: string | undefined;
 }) {
-  const branchData = useMemo(() => {
-    const match = mockBranches.find(
-      (mb) =>
-        mb.name.toLowerCase() === branch.name.toLowerCase() ||
-        (branch.sourceBranchCode && mb.id.toLowerCase() === branch.sourceBranchCode.toLowerCase())
-    );
-    return match || mockBranches[0]!;
-  }, [branch]);
-
+  const { selectedDate } = useDate();
   const branchId = Number(branch.id) || Number(branch.sourceBranchCode?.replace(/\D/g, "")) || 1;
+
+  const overviewQuery = useQuery({
+    queryKey: ["branch-overview", branchId, selectedDate],
+    queryFn: () => api.getBranchOverview(branchId, selectedDate),
+    retry: 1,
+  });
+  const networkQuery = useQuery({
+    queryKey: ["network", selectedDate],
+    queryFn: () => api.getNetwork(selectedDate),
+    retry: 1,
+  });
+  const driversQuery = useQuery({
+    queryKey: ["branch-drivers", branchId, selectedDate],
+    queryFn: () => api.getBranchDrivers(branchId, selectedDate),
+    retry: 1,
+  });
   const insightsQuery = useQuery({
-    queryKey: ["branch-insights", branchId],
-    queryFn: () => api.getBranchInsights(branchId),
+    queryKey: ["branch-insights", branchId, selectedDate],
+    queryFn: () => api.getBranchInsights(branchId, selectedDate),
     retry: false,
   });
 
-  const peerCollectionRate = mockNetworkTotals.avgCollectionRate;
+  const branchMetrics = overviewQuery.data?.data.metrics ?? {};
+  const networkAverages = networkQuery.data?.data.networkAverages ?? {};
+  const rootCauseDrivers = driversQuery.data?.data.rootCauseDrivers ?? [];
+  const insightItems = insightsQuery.data?.data ?? [];
+  const allNetworkBranches = networkQuery.data?.data.branches ?? [];
+
+  // Backend-derived branch view model used by the existing UI structure.
+  const branchData = useMemo(() => {
+    const collectionRate = metricToNumber(getMetric(branchMetrics, "collection_efficiency")) ?? 0;
+    const avgDaysToResolve = metricToNumber(getMetric(branchMetrics, "avg_days_to_resolve")) ?? 0;
+    const ptpKept = metricToNumber(getMetric(branchMetrics, "ptp_kept_rate")) ?? 0;
+    const contactRate = metricToNumber(getMetric(branchMetrics, "contact_rate")) ?? 0;
+    const dpd30Plus = metricToNumber(getMetric(branchMetrics, "dpd_30_plus_concentration")) ?? 0;
+    // Use denominator of dpd_30_plus_concentration as total account count (seeded in DB)
+    const dpdMetric = getMetric(branchMetrics, "dpd_30_plus_concentration");
+    const accounts = dpdMetric?.denominator ?? 0;
+    return {
+      id: branch.sourceBranchCode || String(branch.id),
+      name: branch.name,
+      region: branch.region,
+      accounts,
+      collectionRate,
+      avgDaysToResolve,
+      ptpKept,
+      contactRate,
+      dpd30Plus,
+    };
+  }, [branch, branchMetrics]);
+
+  const peerCollectionRate = (networkAverages["collection_efficiency"] ?? 0) * 100;
   const collectionGap = branchData.collectionRate - peerCollectionRate;
   const isAhead = collectionGap >= 0;
-  const dpd30Plus = branchData.id === "TPA" ? 38 : 26;
+  const dpd30Plus = branchData.dpd30Plus;
+
+  // Compatibility mapping: backend branches/network -> shapes the existing UI expects.
+  const mappedBranches = useMemo(() => {
+    return allNetworkBranches.map((b) => {
+      const ce = metricToNumber(getMetric(b.metrics, "collection_efficiency")) ?? 0;
+      const adr = metricToNumber(getMetric(b.metrics, "avg_days_to_resolve")) ?? 0;
+      const cr = metricToNumber(getMetric(b.metrics, "contact_rate")) ?? 0;
+      const ptp = metricToNumber(getMetric(b.metrics, "ptp_kept_rate")) ?? 0;
+      const dpd = metricToNumber(getMetric(b.metrics, "dpd_30_plus_concentration")) ?? 0;
+      const cureM = getMetric(b.metrics, "cure_rate");
+      const cureRate = cureM?.value != null ? Math.round(cureM.value * 100) : 0;
+      // Use denominator of dpd_30_plus_concentration as total account count
+      const dpdM = getMetric(b.metrics, "dpd_30_plus_concentration");
+      const accounts = dpdM?.denominator ?? 0;
+      return {
+        id: b.sourceBranchCode || String(b.id),
+        name: b.name,
+        region: b.region,
+        state: "",
+        accounts,
+        collectionRate: ce,
+        recovered: `$${(ce * 0.08).toFixed(1)}M`,
+        cureRate,
+        contactRate: cr,
+        ptpKept: ptp,
+        avgDaysToResolve: adr,
+        collectionsPerAgent: "$19K",
+        escalationRate: 0,
+        firstContact: "Day 3",
+        outreachPath: "SMS → Phone",
+        dpd30Plus: dpd,
+      };
+    });
+  }, [allNetworkBranches]);
+
+  const mappedNetworkTotals = useMemo(() => {
+    const avg = (code: string) => (networkAverages[code] ?? 0) * 100;
+    return {
+      totalBranches: mappedBranches.length,
+      totalAccounts: mappedBranches.reduce((s, b) => s + b.accounts, 0),
+      avgCollectionRate: Math.round(avg("collection_efficiency")),
+      avgCureRate: 60,
+      avgContactRate: Math.round(avg("contact_rate")),
+      avgPtpKept: Math.round(avg("ptp_kept_rate")),
+      avgEscalationRate: 12,
+      avgDaysToResolve: Math.round(networkAverages["avg_days_to_resolve"] ?? 22),
+      avgDpd30Plus: Math.round(avg("dpd_30_plus_concentration")),
+    };
+  }, [mappedBranches, networkAverages]);
 
   // 5 CORE KPI METRICS: Standardized Root Cause Taxonomy
   const coreKpis: CoreKpiDriverModel[] = useMemo(() => {
@@ -177,16 +312,16 @@ function BranchRootCauseContent({
         name: "Collection Efficiency %",
         shortName: "Collection",
         icon: Zap,
-        branchVal: `${branchData.collectionRate}%`,
-        peerVal: `${peerCollectionRate}%`,
-        delta: `${isAhead ? "+" : ""}${collectionGap} pts`,
+        branchVal: formatPercent(branchData.collectionRate),
+        peerVal: formatPercent(peerCollectionRate),
+        delta: formatPoints(collectionGap, true),
         tone: isAhead ? "success" : "danger",
         branchNumeric: branchData.collectionRate,
         peerNumeric: peerCollectionRate,
         unit: "%",
-        observedDifferenceText: `${isAhead ? "+" : ""}${collectionGap} pts vs Regional Benchmark`,
+        observedDifferenceText: `${formatPoints(collectionGap, true)} vs Regional Benchmark`,
         direction: isAhead ? "Lead Advantage" : "Underperforming",
-        varianceRationale: `${branchData.name} records a ${branchData.collectionRate}% collection efficiency versus regional peer average ${peerCollectionRate}%, producing a ${Math.abs(collectionGap)} pt ${isAhead ? "lead" : "deficit"}.`,
+        varianceRationale: `${branchData.name} records a ${formatPercent(branchData.collectionRate)} collection efficiency versus regional peer average ${formatPercent(peerCollectionRate)}, producing a ${formatDecimal(Math.abs(collectionGap))} pt ${isAhead ? "lead" : "deficit"}.`,
         attributionRationale: isAhead
           ? `High recovery efficiency is anchored by prompt Day 2 multi-touch outreach (SMS followed by phone) and automated payment link delivery that converts 68% of PTP commitments within 48 hours.`
           : `Delinquency roll into chronic buckets and lower cash collections are driven by frontline outreach delays (Day 5 first touch) and broken promise queues that remain uncontacted for more than 4 days.`,
@@ -197,7 +332,7 @@ function BranchRootCauseContent({
           {
             iconType: "finding",
             label: "Core Variance",
-            text: `${branchData.name} stands at ${branchData.collectionRate}% vs ${peerCollectionRate}% peer benchmark (${isAhead ? "+" : ""}${collectionGap} pts).`,
+            text: `${branchData.name} stands at ${formatPercent(branchData.collectionRate)} vs ${formatPercent(peerCollectionRate)} peer benchmark (${formatPoints(collectionGap, true)}).`,
           },
           {
             iconType: "driver",
@@ -248,7 +383,11 @@ function BranchRootCauseContent({
           "Prioritize accounts with outstanding balances exceeding $15,000 for immediate specialist outreach.",
           "Introduce flexible 2-part settlement concessions for borrowers facing documented income disruption.",
         ],
-        metricLift: ["+5.5–8.0 pts Collection Efficiency Lift", "+$1.4M Net Portfolio Recovery Boost", "+22% Digital Payment Adoption"],
+        metricLift: [
+          "+5.5–8.0 pts Collection Efficiency Lift",
+          "+$1.4M Net Portfolio Recovery Boost",
+          "+22% Digital Payment Adoption",
+        ],
         projectedLift: "+5.5–8.0 pts",
         projectedPayoff: "+$1.4M Net Recovery",
       },
@@ -257,23 +396,29 @@ function BranchRootCauseContent({
         name: "Average Days to Resolution",
         shortName: "Resolution",
         icon: Clock3,
-        branchVal: `${branchData.avgDaysToResolve}d`,
-        peerVal: "22d",
-        delta: `${branchData.avgDaysToResolve <= 22 ? "-" : "+"}${Math.abs(branchData.avgDaysToResolve - 22)} days`,
-        tone: branchData.avgDaysToResolve <= 22 ? "success" : "danger",
+        branchVal: formatDays(branchData.avgDaysToResolve),
+        peerVal: formatDays(mappedNetworkTotals.avgDaysToResolve),
+        delta: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "-" : "+"}${formatDecimal(Math.abs(branchData.avgDaysToResolve - mappedNetworkTotals.avgDaysToResolve))} days`,
+        tone:
+          branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve
+            ? "success"
+            : "danger",
         branchNumeric: branchData.avgDaysToResolve,
-        peerNumeric: 22,
+        peerNumeric: mappedNetworkTotals.avgDaysToResolve,
         unit: "d",
-        observedDifferenceText: `${branchData.avgDaysToResolve <= 22 ? "-" : "+"}${Math.abs(branchData.avgDaysToResolve - 22)}d vs Peer Average (22d)`,
-        direction: branchData.avgDaysToResolve <= 22 ? "Optimal Pace" : "Underperforming",
-        varianceRationale: `Borrower resolution cycles average ${branchData.avgDaysToResolve} days from delinquency onset to cure/settlement, compared to the regional cohort baseline of 22 days.`,
+        observedDifferenceText: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "-" : "+"}${formatDecimal(Math.abs(branchData.avgDaysToResolve - mappedNetworkTotals.avgDaysToResolve))}d vs Peer Average (${formatDays(mappedNetworkTotals.avgDaysToResolve)})`,
+        direction:
+          branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve
+            ? "Optimal Pace"
+            : "Underperforming",
+        varianceRationale: `Borrower resolution cycles average ${formatDecimal(branchData.avgDaysToResolve)} days from delinquency onset to cure/settlement, compared to the regional cohort baseline of ${formatDecimal(mappedNetworkTotals.avgDaysToResolve)} days.`,
         attributionRationale: `Accounts spend excessive time in soft delinquency (1–15 DPD) without structured resolution workflows. Early contact delays allow borrower liquidity to dissipate, requiring 2.8x more follow-up touchpoints once past Day 20.`,
         keyTakeaway: `Accelerating resolution velocity by 4–6 days preserves borrower liquidity and halts chronic rollover.`,
         oneLinerInsights: [
           {
             iconType: "finding",
             label: "Core Variance",
-            text: `Average resolution velocity is ${branchData.avgDaysToResolve} days versus the regional benchmark of 22 days.`,
+            text: `Average resolution velocity is ${formatDecimal(branchData.avgDaysToResolve)} days versus the regional benchmark of ${formatDecimal(mappedNetworkTotals.avgDaysToResolve)} days.`,
           },
           {
             iconType: "driver",
@@ -294,27 +439,36 @@ function BranchRootCauseContent({
         segments: [
           {
             segmentName: "1–15 DPD Early Delinquency",
-            branchShare: `${branchData.avgDaysToResolve <= 22 ? "11d" : "17d"}`,
-            networkShare: "12d",
-            deltaPts: `${branchData.avgDaysToResolve <= 22 ? "-1d" : "+5d"}`,
+            branchShare: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "11d" : "17d"}`,
+            networkShare: formatDays(mappedNetworkTotals.avgDaysToResolve - 1),
+            deltaPts: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "-1d" : "+5d"}`,
             accounts: Math.round(branchData.accounts * 0.52),
-            tone: branchData.avgDaysToResolve <= 22 ? "success" : "danger",
+            tone:
+              branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve
+                ? "success"
+                : "danger",
           },
           {
             segmentName: "16–30 DPD Escalating Risk",
-            branchShare: `${branchData.avgDaysToResolve <= 22 ? "22d" : "29d"}`,
-            networkShare: "24d",
-            deltaPts: `${branchData.avgDaysToResolve <= 22 ? "-2d" : "+5d"}`,
+            branchShare: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "22d" : "29d"}`,
+            networkShare: formatDays(mappedNetworkTotals.avgDaysToResolve + 2),
+            deltaPts: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "-2d" : "+5d"}`,
             accounts: Math.round(branchData.accounts * 0.32),
-            tone: branchData.avgDaysToResolve <= 22 ? "success" : "danger",
+            tone:
+              branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve
+                ? "success"
+                : "danger",
           },
           {
             segmentName: "31+ DPD Hardened Stage",
-            branchShare: `${branchData.avgDaysToResolve <= 22 ? "37d" : "46d"}`,
-            networkShare: "40d",
-            deltaPts: `${branchData.avgDaysToResolve <= 22 ? "-3d" : "+6d"}`,
+            branchShare: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "37d" : "46d"}`,
+            networkShare: formatDays(mappedNetworkTotals.avgDaysToResolve + 12),
+            deltaPts: `${branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve ? "-3d" : "+6d"}`,
             accounts: Math.round(branchData.accounts * 0.16),
-            tone: branchData.avgDaysToResolve <= 22 ? "success" : "danger",
+            tone:
+              branchData.avgDaysToResolve <= mappedNetworkTotals.avgDaysToResolve
+                ? "success"
+                : "danger",
           },
         ],
         interventions: [
@@ -322,7 +476,11 @@ function BranchRootCauseContent({
           "Introduce automated escalation triggers when an account remains without promise contact after Day 10.",
           "Implement dedicated fast-track settlement concessions for 16–30 DPD accounts before month-end close.",
         ],
-        metricLift: ["-4.0 to -6.5 Days Resolution Acceleration", "+19% Early Self-Cure Conversion", "-26% Rollover into Chronic DPD"],
+        metricLift: [
+          "-4.0 to -6.5 Days Resolution Acceleration",
+          "+19% Early Self-Cure Conversion",
+          "-26% Rollover into Chronic DPD",
+        ],
         projectedLift: "-4.0 to -6.5d",
         projectedPayoff: "18d Target Cure",
       },
@@ -331,23 +489,26 @@ function BranchRootCauseContent({
         name: "PTP Kept %",
         shortName: "PTP Kept",
         icon: CheckCircle2,
-        branchVal: `${branchData.ptpKept}%`,
-        peerVal: `${mockNetworkTotals.avgPtpKept}%`,
-        delta: `${branchData.ptpKept - mockNetworkTotals.avgPtpKept >= 0 ? "+" : ""}${branchData.ptpKept - mockNetworkTotals.avgPtpKept} pts`,
-        tone: branchData.ptpKept >= mockNetworkTotals.avgPtpKept ? "success" : "danger",
+        branchVal: formatPercent(branchData.ptpKept),
+        peerVal: formatPercent(mappedNetworkTotals.avgPtpKept),
+        delta: formatPoints(branchData.ptpKept - mappedNetworkTotals.avgPtpKept, true),
+        tone: branchData.ptpKept >= mappedNetworkTotals.avgPtpKept ? "success" : "danger",
         branchNumeric: branchData.ptpKept,
-        peerNumeric: mockNetworkTotals.avgPtpKept,
+        peerNumeric: mappedNetworkTotals.avgPtpKept,
         unit: "%",
-        observedDifferenceText: `${branchData.ptpKept - mockNetworkTotals.avgPtpKept >= 0 ? "+" : ""}${branchData.ptpKept - mockNetworkTotals.avgPtpKept} pts vs Network Benchmark (${mockNetworkTotals.avgPtpKept}%)`,
-        direction: branchData.ptpKept >= mockNetworkTotals.avgPtpKept ? "Lead Advantage" : "Underperforming",
-        varianceRationale: `Promise-to-pay fulfillment rate stands at ${branchData.ptpKept}%, ${branchData.ptpKept >= mockNetworkTotals.avgPtpKept ? "outperforming" : "lagging"} peer branches (${mockNetworkTotals.avgPtpKept}%).`,
+        observedDifferenceText: `${formatPoints(branchData.ptpKept - mappedNetworkTotals.avgPtpKept, true)} vs Network Benchmark (${formatPercent(mappedNetworkTotals.avgPtpKept)})`,
+        direction:
+          branchData.ptpKept >= mappedNetworkTotals.avgPtpKept
+            ? "Lead Advantage"
+            : "Underperforming",
+        varianceRationale: `Promise-to-pay fulfillment rate stands at ${formatPercent(branchData.ptpKept)}, ${branchData.ptpKept >= mappedNetworkTotals.avgPtpKept ? "outperforming" : "lagging"} peer branches (${formatPercent(mappedNetworkTotals.avgPtpKept)}).`,
         attributionRationale: `Frontline agents accept extended payment commitment horizons (7 to 14 days) without interim check-ins. Borrower liquidity deteriorates steeply beyond 72 hours, resulting in a 44% breakage rate on extended promises compared to only 14% on 48–72h commitments.`,
         keyTakeaway: `Limiting promise horizons to a strict 72-hour window directly arrests commitment breakage.`,
         oneLinerInsights: [
           {
             iconType: "finding",
             label: "Core Variance",
-            text: `Promise fulfillment is ${branchData.ptpKept}% compared to peer benchmark of ${mockNetworkTotals.avgPtpKept}%.`,
+            text: `Promise fulfillment is ${formatPercent(branchData.ptpKept)} compared to peer benchmark of ${formatPercent(mappedNetworkTotals.avgPtpKept)}.`,
           },
           {
             iconType: "driver",
@@ -396,7 +557,11 @@ function BranchRootCauseContent({
           "Dispatch automated WhatsApp & SMS payment links 24 hours and 4 hours prior to commitment due time.",
           "Secure micro-token commitments ($500–$1,000) during call negotiations to lock in repayment intent.",
         ],
-        metricLift: ["+12–16% PTP Kept Rate Improvement", "-32% Broken Promise Backlog", "+$880K Accelerated Cash Collection"],
+        metricLift: [
+          "+12–16% PTP Kept Rate Improvement",
+          "-32% Broken Promise Backlog",
+          "+$880K Accelerated Cash Collection",
+        ],
         projectedLift: "+12–16%",
         projectedPayoff: "-32% Broken PTPs",
       },
@@ -405,23 +570,26 @@ function BranchRootCauseContent({
         name: "Contact Rate",
         shortName: "Contact",
         icon: PhoneCall,
-        branchVal: `${branchData.contactRate}%`,
-        peerVal: `${mockNetworkTotals.avgContactRate}%`,
-        delta: `${branchData.contactRate - mockNetworkTotals.avgContactRate >= 0 ? "+" : ""}${branchData.contactRate - mockNetworkTotals.avgContactRate} pts`,
-        tone: branchData.contactRate >= mockNetworkTotals.avgContactRate ? "success" : "danger",
+        branchVal: formatPercent(branchData.contactRate),
+        peerVal: formatPercent(mappedNetworkTotals.avgContactRate),
+        delta: formatPoints(branchData.contactRate - mappedNetworkTotals.avgContactRate, true),
+        tone: branchData.contactRate >= mappedNetworkTotals.avgContactRate ? "success" : "danger",
         branchNumeric: branchData.contactRate,
-        peerNumeric: mockNetworkTotals.avgContactRate,
+        peerNumeric: mappedNetworkTotals.avgContactRate,
         unit: "%",
-        observedDifferenceText: `${branchData.contactRate - mockNetworkTotals.avgContactRate >= 0 ? "+" : ""}${branchData.contactRate - mockNetworkTotals.avgContactRate} pts vs Network Benchmark (${mockNetworkTotals.avgContactRate}%)`,
-        direction: branchData.contactRate >= mockNetworkTotals.avgContactRate ? "Lead Advantage" : "Underperforming",
-        varianceRationale: `Connected contact velocity stands at ${branchData.contactRate}%, comparing to the regional peer average of ${mockNetworkTotals.avgContactRate}%.`,
+        observedDifferenceText: `${formatPoints(branchData.contactRate - mappedNetworkTotals.avgContactRate, true)} vs Network Benchmark (${formatPercent(mappedNetworkTotals.avgContactRate)})`,
+        direction:
+          branchData.contactRate >= mappedNetworkTotals.avgContactRate
+            ? "Lead Advantage"
+            : "Underperforming",
+        varianceRationale: `Connected contact velocity stands at ${formatPercent(branchData.contactRate)}, comparing to the regional peer average of ${formatPercent(mappedNetworkTotals.avgContactRate)}.`,
         attributionRationale: `Borrower response peaks sharply between 4:00 PM and 7:30 PM on weekdays. Agent calling rosters historically concentrate dial attempts during the 9:30 AM–1:00 PM morning shift when customers are commuting or working, resulting in high unanswered dials.`,
         keyTakeaway: `Shifting frontline calling capacity to the 4:00–7:30 PM evening window yields an immediate 8–12% contact lift.`,
         oneLinerInsights: [
           {
             iconType: "finding",
             label: "Core Variance",
-            text: `Contact reach is ${branchData.contactRate}% vs regional benchmark of ${mockNetworkTotals.avgContactRate}% (${branchData.contactRate - mockNetworkTotals.avgContactRate >= 0 ? "+" : ""}${branchData.contactRate - mockNetworkTotals.avgContactRate} pts).`,
+            text: `Contact reach is ${formatPercent(branchData.contactRate)} vs regional benchmark of ${formatPercent(mappedNetworkTotals.avgContactRate)} (${formatPoints(branchData.contactRate - mappedNetworkTotals.avgContactRate, true)}).`,
           },
           {
             iconType: "driver",
@@ -445,7 +613,7 @@ function BranchRootCauseContent({
             branchShare: `${branchData.contactRate >= 70 ? "82%" : "68%"}`,
             networkShare: "76%",
             deltaPts: `${branchData.contactRate >= 70 ? "+6\u00A0pts" : "-8\u00A0pts"}`,
-            accounts: Math.round(branchData.accounts * 0.50),
+            accounts: Math.round(branchData.accounts * 0.5),
             tone: branchData.contactRate >= 70 ? "success" : "danger",
           },
           {
@@ -470,7 +638,11 @@ function BranchRootCauseContent({
           "Activate automated two-way WhatsApp conversational prompts 24h prior to calls to verify borrower availability.",
           "Implement automatic 3-dial retry caps with immediate alternate channel escalation (SMS → Email → Field).",
         ],
-        metricLift: ["+9–13% Connected Contact Rate Lift", "+24% Connected Borrower Talk Time", "-40% Unanswered Ring Overhead"],
+        metricLift: [
+          "+9–13% Connected Contact Rate Lift",
+          "+24% Connected Borrower Talk Time",
+          "-40% Unanswered Ring Overhead",
+        ],
         projectedLift: "+9–13%",
         projectedPayoff: "2.4x Talk Time",
       },
@@ -479,23 +651,23 @@ function BranchRootCauseContent({
         name: "DPD Distribution",
         shortName: "30+ DPD %",
         icon: ShieldAlert,
-        branchVal: `${dpd30Plus}%`,
-        peerVal: "31%",
-        delta: `${dpd30Plus > 31 ? "+" : ""}${dpd30Plus - 31} pts`,
-        tone: dpd30Plus > 31 ? "danger" : "success",
+        branchVal: formatPercent(dpd30Plus),
+        peerVal: formatPercent(mappedNetworkTotals.avgDpd30Plus),
+        delta: formatPoints(dpd30Plus - mappedNetworkTotals.avgDpd30Plus, true),
+        tone: dpd30Plus > mappedNetworkTotals.avgDpd30Plus ? "danger" : "success",
         branchNumeric: dpd30Plus,
-        peerNumeric: 31,
+        peerNumeric: mappedNetworkTotals.avgDpd30Plus,
         unit: "%",
-        observedDifferenceText: `${dpd30Plus > 31 ? "+" : ""}${dpd30Plus - 31} pts vs Regional Baseline (31%)`,
+        observedDifferenceText: `${formatPoints(dpd30Plus - mappedNetworkTotals.avgDpd30Plus, true)} vs Regional Baseline (${formatPercent(mappedNetworkTotals.avgDpd30Plus)})`,
         direction: dpd30Plus > 31 ? "Elevated Risk" : "Optimal Pace",
-        varianceRationale: `Delinquent balances in 30+ DPD represent ${dpd30Plus}% of the branch portfolio, driving active credit loss provision drag.`,
+        varianceRationale: `Delinquent balances in 30+ DPD represent ${formatPercent(dpd30Plus)} of the branch portfolio, driving active credit loss provision drag.`,
         attributionRationale: `Accounts crossing the 30 DPD threshold suffer a 65% drop in self-cure probability. Delayed first contact during days 1–15 allows soft delinquencies to roll into hardened buckets without early restructuring interventions.`,
         keyTakeaway: `Proactive settlement offers before accounts cross 30 DPD contain chronic loss exposure.`,
         oneLinerInsights: [
           {
             iconType: "finding",
             label: "Core Variance",
-            text: `30+ DPD portfolio concentration is ${dpd30Plus}% against the regional baseline of 31%.`,
+            text: `30+ DPD portfolio concentration is ${formatPercent(dpd30Plus)} against the regional baseline of ${formatPercent(mappedNetworkTotals.avgDpd30Plus)}.`,
           },
           {
             iconType: "driver",
@@ -527,7 +699,7 @@ function BranchRootCauseContent({
             branchShare: `${branchData.id === "TPA" ? "12%" : "8%"}`,
             networkShare: "10%",
             deltaPts: `${branchData.id === "TPA" ? "+2" : "-2"} pts`,
-            accounts: Math.round(branchData.accounts * 0.10),
+            accounts: Math.round(branchData.accounts * 0.1),
             tone: branchData.id === "TPA" ? "danger" : "success",
           },
           {
@@ -544,31 +716,45 @@ function BranchRootCauseContent({
           "Provide frontline teams with pre-approved restructuring templates before accounts breach 60 DPD.",
           "Dispatch targeted field officer visits for high-exposure borrowers (>₹1 Lakh) exceeding 45 DPD.",
         ],
-        metricLift: ["-5.0 to -8.0 pts 30+ DPD Concentration Drop", "+24% 31–60 DPD Cure Rate", "-20% Roll into Write-Off Status"],
+        metricLift: [
+          "-5.0 to -8.0 pts 30+ DPD Concentration Drop",
+          "+24% 31–60 DPD Cure Rate",
+          "-20% Roll into Write-Off Status",
+        ],
         projectedLift: "-5.0 to -8.0 pts",
         projectedPayoff: "-20% Loss Drag",
       },
     ];
-  }, [branchData, isAhead, collectionGap, peerCollectionRate, dpd30Plus]);
+  }, [
+    branchData,
+    isAhead,
+    collectionGap,
+    peerCollectionRate,
+    dpd30Plus,
+    mappedNetworkTotals,
+    rootCauseDrivers,
+    insightItems,
+  ]);
 
-  // Compared branch is benchmark leader
-  const comparedBranch = useMemo(() => {
-    return branchData.id === "DAL"
-      ? (mockBranches.find((b) => b.id === "ATL") || mockBranches[1]!)
-      : (mockBranches.find((b) => b.id === "DAL") || mockBranches[0]!);
-  }, [branchData.id]);
-
-  // Network ranking stats
+  // Compared branch is the collection-efficiency top performer (peer if selected is top).
   const sortedBranches = useMemo(() => {
-    return [...mockBranches].sort((a, b) => b.collectionRate - a.collectionRate);
-  }, []);
+    return [...mappedBranches].sort((a, b) => b.collectionRate - a.collectionRate);
+  }, [mappedBranches]);
 
   const branchRank = useMemo(() => {
     return sortedBranches.findIndex((b) => b.id === branchData.id) + 1;
   }, [sortedBranches, branchData.id]);
 
-  const topBranch = sortedBranches[0]!;
-  const laggingBranch = sortedBranches[sortedBranches.length - 1]!;
+  const topBranch = sortedBranches[0] ?? branchData;
+  const laggingBranch = sortedBranches[sortedBranches.length - 1] ?? branchData;
+
+  const comparedBranch = useMemo(() => {
+    if (!topBranch) return branchData;
+    if (branchData.id === topBranch.id) {
+      return sortedBranches[1] || topBranch;
+    }
+    return topBranch;
+  }, [branchData, sortedBranches, topBranch]);
 
   // Selected KPI State
   const [selectedKpiId, setSelectedKpiId] = useState<string>(() => {
@@ -577,7 +763,7 @@ function BranchRootCauseContent({
         (k) =>
           k.id.toLowerCase() === initialDriver.toLowerCase() ||
           k.name.toLowerCase().includes(initialDriver.toLowerCase()) ||
-          k.shortName.toLowerCase().includes(initialDriver.toLowerCase())
+          k.shortName.toLowerCase().includes(initialDriver.toLowerCase()),
       );
       if (match) return match.id;
     }
@@ -588,6 +774,61 @@ function BranchRootCauseContent({
     return coreKpis.find((k) => k.id === selectedKpiId) || coreKpis[0]!;
   }, [coreKpis, selectedKpiId]);
 
+  const comparisonAIQuery = useQuery({
+    queryKey: ["branch-ai-comparison", branchId, selectedDate],
+    queryFn: () => api.getBranchComparisonAI(branchId, selectedDate),
+    retry: false,
+  });
+  const selectedKpiAIQuery = useQuery({
+    queryKey: ["branch-ai-kpi", branchId, selectedDate, activeKpi.id],
+    queryFn: () => api.getSelectedKpiAI(branchId, activeKpi.id, selectedDate),
+    retry: false,
+  });
+  const overallAIQuery = useQuery({
+    queryKey: ["branch-ai-overall", branchId, selectedDate],
+    queryFn: () => api.getOverallBranchAI(branchId, selectedDate),
+    retry: false,
+  });
+
+  const aiKpiInsight =
+    selectedKpiAIQuery.data?.ai.status === "ai" ? selectedKpiAIQuery.data.data : null;
+  const displayedOneLinerInsights: OneLinerInsight[] = aiKpiInsight
+    ? [
+        {
+          iconType: "finding",
+          label: "Core Variance",
+          text: aiKpiInsight.coreVariance ?? aiKpiInsight.narrative,
+        },
+        ...(aiKpiInsight.frontlineDriver
+          ? [
+              {
+                iconType: "driver" as const,
+                label: "Frontline Driver",
+                text: aiKpiInsight.frontlineDriver,
+              },
+            ]
+          : []),
+        ...(aiKpiInsight.priorityAction
+          ? [
+              {
+                iconType: "action" as const,
+                label: "Priority Action",
+                text: aiKpiInsight.priorityAction,
+              },
+            ]
+          : []),
+        ...(aiKpiInsight.cohortFocus
+          ? [
+              {
+                iconType: "segment" as const,
+                label: "Cohort Focus",
+                text: aiKpiInsight.cohortFocus,
+              },
+            ]
+          : []),
+      ]
+    : activeKpi.oneLinerInsights;
+
   // Compared Branch KPI value for active KPI
   const comparedKpiMetric = useMemo(() => {
     const kpiId = activeKpi.id;
@@ -595,9 +836,9 @@ function BranchRootCauseContent({
       const val = comparedBranch.collectionRate;
       const delta = branchData.collectionRate - val;
       return {
-        valStr: `${val}%`,
+        valStr: formatPercent(val),
         valNum: val,
-        deltaStr: `${delta >= 0 ? "+" : ""}${delta} pts`,
+        deltaStr: formatPoints(delta, true),
         isAhead: delta >= 0,
       };
     }
@@ -605,9 +846,9 @@ function BranchRootCauseContent({
       const val = comparedBranch.avgDaysToResolve;
       const delta = branchData.avgDaysToResolve - val;
       return {
-        valStr: `${val}d`,
+        valStr: formatDays(val),
         valNum: val,
-        deltaStr: `${delta <= 0 ? "" : "+"}${delta}d`,
+        deltaStr: `${delta <= 0 ? "" : "+"}${formatDecimal(delta)}d`,
         isAhead: delta <= 0,
       };
     }
@@ -615,9 +856,9 @@ function BranchRootCauseContent({
       const val = comparedBranch.ptpKept;
       const delta = branchData.ptpKept - val;
       return {
-        valStr: `${val}%`,
+        valStr: formatPercent(val),
         valNum: val,
-        deltaStr: `${delta >= 0 ? "+" : ""}${delta} pts`,
+        deltaStr: formatPoints(delta, true),
         isAhead: delta >= 0,
       };
     }
@@ -625,158 +866,30 @@ function BranchRootCauseContent({
       const val = comparedBranch.contactRate;
       const delta = branchData.contactRate - val;
       return {
-        valStr: `${val}%`,
+        valStr: formatPercent(val),
         valNum: val,
-        deltaStr: `${delta >= 0 ? "+" : ""}${delta} pts`,
+        deltaStr: formatPoints(delta, true),
         isAhead: delta >= 0,
       };
     }
     // dpd_distribution (30+ DPD %)
-    const getDpd = (id: string) => (id === "TPA" ? 38 : id === "DAL" ? 21 : id === "ATL" ? 24 : id === "PHX" ? 27 : id === "CLT" ? 29 : 32);
+    const getDpd = (id: string) =>
+      mappedBranches.find((b) => b.id === id)?.dpd30Plus ?? mappedNetworkTotals.avgDpd30Plus;
     const branchDpdVal = getDpd(branchData.id);
     const comparedDpdVal = getDpd(comparedBranch.id);
     const delta = branchDpdVal - comparedDpdVal;
     return {
-      valStr: `${comparedDpdVal}%`,
+      valStr: formatPercent(comparedDpdVal),
       valNum: comparedDpdVal,
-      deltaStr: `${delta > 0 ? "+" : ""}${delta} pts`,
+      deltaStr: formatPoints(delta, true),
       isAhead: delta <= 0,
     };
   }, [activeKpi.id, branchData, comparedBranch]);
 
-  // Point-wise Key Summary for selected KPI
-  const keySummaryPoints = useMemo(() => {
-    const kpiId = activeKpi.id;
-    const branchName = branchData.name;
-    const compName = comparedBranch.name;
-
-    if (kpiId === "collection_efficiency") {
-      const compVal = comparedBranch.collectionRate;
-      const peerVal = peerCollectionRate;
-      const bVal = branchData.collectionRate;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Achieves ${compVal}% collection efficiency.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Records ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} leads ${compName} by ${diffComp} pts in collection efficiency.`
-            : `${branchName} trails ${compName} by ${Math.abs(diffComp)} pts in collection efficiency.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: isAheadComp
-            ? `Sustain Day 2 outreach tempo and scale digital UPI payment links across all accounts.`
-            : `Help ${branchName} accelerate initial borrower outreach from Day 5 to Day 2 to close the recovery gap.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "avg_resolution_days") {
-      const compVal = comparedBranch.avgDaysToResolve;
-      const peerVal = 22;
-      const bVal = branchData.avgDaysToResolve;
-      const diffComp = bVal - compVal;
-      return [
-        { label: `${compName}`, text: `Resolves accounts in ${compVal} days.` },
-        { label: `Regional Average`, text: `${peerVal} days.` },
-        { label: `${branchName}`, text: `Takes ${bVal} days.` },
-        {
-          label: `Key Finding`,
-          text: diffComp > 0
-            ? `${branchName} takes ${diffComp} days longer than ${compName}.`
-            : `${branchName} resolves accounts ${Math.abs(diffComp)} days faster than ${compName}.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: diffComp > 0
-            ? `Help ${branchName} resolve accounts faster.`
-            : `Maintain swift resolution velocity and prevent chronic rollover.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "ptp_kept") {
-      const compVal = comparedBranch.ptpKept;
-      const peerVal = mockNetworkTotals.avgPtpKept;
-      const bVal = branchData.ptpKept;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Maintains a ${compVal}% promise fulfillment rate.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Fulfills ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} leads ${compName} by ${diffComp} pts in kept payment promises.`
-            : `${branchName} trails ${compName} by ${Math.abs(diffComp)} pts in kept payment promises.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: `Help ${branchName} enforce a strict 72-hour promise horizon and automated payment reminders.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    if (kpiId === "contact_rate") {
-      const compVal = comparedBranch.contactRate;
-      const peerVal = mockNetworkTotals.avgContactRate;
-      const bVal = branchData.contactRate;
-      const diffComp = bVal - compVal;
-      const isAheadComp = diffComp >= 0;
-      return [
-        { label: `${compName}`, text: `Reaches ${compVal}% of delinquent borrowers.` },
-        { label: `Regional Average`, text: `${peerVal}%.` },
-        { label: `${branchName}`, text: `Contacts ${bVal}%.` },
-        {
-          label: `Key Finding`,
-          text: isAheadComp
-            ? `${branchName} reaches ${diffComp} pts more borrowers than ${compName}.`
-            : `${branchName} connects with ${Math.abs(diffComp)} pts fewer borrowers than ${compName}.`,
-          isHighlight: true,
-        },
-        {
-          label: `Recommended Focus`,
-          text: `Help ${branchName} shift 45% of outbound agent dialing rosters to the 4:00 PM–7:30 PM evening window.`,
-          isFocus: true,
-        },
-      ];
-    }
-
-    // dpd_distribution
-    const getDpd = (id: string) => (id === "TPA" ? 38 : id === "DAL" ? 21 : id === "ATL" ? 24 : id === "PHX" ? 27 : id === "CLT" ? 29 : 32);
-    const compVal = getDpd(comparedBranch.id);
-    const peerVal = 31;
-    const bVal = getDpd(branchData.id);
-    const diffComp = bVal - compVal;
-    return [
-      { label: `${compName}`, text: `Maintains ${compVal}% concentration in 30+ DPD buckets.` },
-      { label: `Regional Average`, text: `${peerVal}%.` },
-      { label: `${branchName}`, text: `Carries ${bVal}%.` },
-      {
-        label: `Key Finding`,
-        text: diffComp > 0
-          ? `${branchName} holds ${diffComp} pts higher chronic delinquency concentration than ${compName}.`
-          : `${branchName} maintains ${Math.abs(diffComp)} pts cleaner portfolio than ${compName}.`,
-        isHighlight: true,
-      },
-      {
-        label: `Recommended Focus`,
-        text: `Help ${branchName} deploy proactive restructuring plans before accounts cross 30 DPD.`,
-        isFocus: true,
-      },
-    ];
-  }, [activeKpi.id, branchData, comparedBranch, peerCollectionRate]);
+  const overallFallback = useMemo(() => {
+    const values = coreKpis.map((kpi) => `${kpi.name} ${kpi.branchVal}`).join(", ");
+    return `${branchData.name} overall performance across the five core KPIs is: ${values}. Use the combined KPI pattern to prioritize the largest verified weakness while preserving demonstrated strengths.`;
+  }, [branchData.name, coreKpis]);
 
   return (
     <AppShell
@@ -802,15 +915,21 @@ function BranchRootCauseContent({
                 Comparative Analysis with Other Branches
               </h1>
               <p className="mt-1 text-xs sm:text-sm text-muted-foreground">
-                Benchmarking {branchData.name} performance drivers, peer rankings, and head-to-head operational gaps
+                Benchmarking {branchData.name} performance drivers, peer rankings, and head-to-head
+                operational gaps
               </p>
             </div>
             <div className="flex items-center gap-2 self-start sm:self-auto shrink-0 flex-wrap">
               <span className="rounded-lg border border-border/70 bg-card/80 px-2.5 py-1 text-xs font-semibold text-foreground">
-                Network Rank: <strong className="text-primary font-bold">#{branchRank} of {mockBranches.length}</strong>
+                Network Rank:{" "}
+                <strong className="text-primary font-bold">
+                  #{branchRank} of {mappedBranches.length}
+                </strong>
               </span>
               <Status tone={isAhead ? "success" : "danger"}>
-                {isAhead ? `+${collectionGap} pts vs Regional Avg` : `${collectionGap} pts vs Regional Avg`}
+                {isAhead
+                  ? `${formatPoints(collectionGap, true)} vs Regional Avg`
+                  : `${formatPoints(collectionGap)} vs Regional Avg`}
               </Status>
             </div>
           </div>
@@ -820,52 +939,82 @@ function BranchRootCauseContent({
             {/* Card 1: Current Branch */}
             <div className="rounded-xl border border-primary/40 bg-primary/10 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">Current Branch</span>
-                <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">Rank #{branchRank}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
+                  Current Branch
+                </span>
+                <span className="rounded bg-primary/20 px-1.5 py-0.5 text-[10px] font-bold text-primary">
+                  Rank #{branchRank}
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold text-foreground truncate">{branchData.name}</p>
               <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-xl font-bold text-display text-foreground">{branchData.collectionRate}%</span>
+                <span className="text-xl font-bold text-display text-foreground">
+                  {formatPercent(branchData.collectionRate)}
+                </span>
                 <span className="text-xs text-muted-foreground font-medium">Efficiency</span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {branchRank === sortedBranches.length ? "Currently in lagging network tier" : branchRank === 1 ? "Leading network across recovery" : "Mid-quartile regional peer"}
+                {branchRank === sortedBranches.length
+                  ? "Currently in lagging network tier"
+                  : branchRank === 1
+                    ? "Leading network across recovery"
+                    : "Mid-quartile regional peer"}
               </p>
             </div>
 
             {/* Card 2: Top Benchmark */}
             <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Top Performer</span>
-                <span className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-bold text-success">Rank #1</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Top Performer
+                </span>
+                <span className="rounded bg-success/15 px-1.5 py-0.5 text-[10px] font-bold text-success">
+                  Rank #1
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold text-foreground truncate">{topBranch.name}</p>
               <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-xl font-bold text-display text-foreground">{topBranch.collectionRate}%</span>
-                <span className={`text-xs font-bold ${branchData.collectionRate >= topBranch.collectionRate ? "text-success" : "text-destructive"}`}>
-                  {branchData.collectionRate - topBranch.collectionRate >= 0 ? "+" : ""}{branchData.collectionRate - topBranch.collectionRate} pts
+                <span className="text-xl font-bold text-display text-foreground">
+                  {formatPercent(topBranch.collectionRate)}
+                </span>
+                <span
+                  className={`text-xs font-bold ${branchData.collectionRate >= topBranch.collectionRate ? "text-success" : "text-destructive"}`}
+                >
+                  {formatPoints(branchData.collectionRate - topBranch.collectionRate, true)}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {branchData.id === topBranch.id ? "Benchmark pacesetter" : `${Math.abs(branchData.collectionRate - topBranch.collectionRate)} pts efficiency gap vs leader`}
+                {branchData.id === topBranch.id
+                  ? "Benchmark pacesetter"
+                  : `${formatDecimal(Math.abs(branchData.collectionRate - topBranch.collectionRate))} pts efficiency gap vs leader`}
               </p>
             </div>
 
             {/* Card 3: Peer Benchmark */}
             <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 shadow-2xs">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Peer Average</span>
-                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">Regional Baseline</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Peer Average
+                </span>
+                <span className="rounded bg-muted px-1.5 py-0.5 text-[10px] font-bold text-muted-foreground">
+                  Regional Baseline
+                </span>
               </div>
               <p className="mt-1 text-sm font-bold text-foreground">6-Branch Network Avg</p>
               <div className="mt-2 flex items-baseline justify-between">
-                <span className="text-xl font-bold text-display text-foreground">{peerCollectionRate}%</span>
-                <span className={`text-xs font-bold ${collectionGap >= 0 ? "text-success" : "text-destructive"}`}>
-                  {collectionGap >= 0 ? "+" : ""}{collectionGap} pts
+                <span className="text-xl font-bold text-display text-foreground">
+                  {formatPercent(peerCollectionRate)}
+                </span>
+                <span
+                  className={`text-xs font-bold ${collectionGap >= 0 ? "text-success" : "text-destructive"}`}
+                >
+                  {formatPoints(collectionGap, true)}
                 </span>
               </div>
               <p className="mt-1 text-[11px] text-muted-foreground">
-                {collectionGap >= 0 ? "Outperforming peer baseline" : "Underperforming peer average by 8 pts"}
+                {collectionGap >= 0
+                  ? "Outperforming peer baseline"
+                  : `Underperforming peer average by ${Math.abs(Math.round(collectionGap * 10) / 10)} pts`}
               </p>
             </div>
 
@@ -873,39 +1022,61 @@ function BranchRootCauseContent({
             {branchData.id === laggingBranch.id ? (
               <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Closest Peer (Lagging Tier)</span>
-                  <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">Rank #5</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Closest Peer (Lagging Tier)
+                  </span>
+                  <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
+                    Rank #{sortedBranches.length - 1}
+                  </span>
                 </div>
                 <p className="mt-1 text-sm font-bold text-foreground truncate">
                   {sortedBranches[sortedBranches.length - 2]?.name ?? "Chicago Branch"}
                 </p>
                 <div className="mt-2 flex items-baseline justify-between">
                   <span className="text-xl font-bold text-display text-foreground">
-                    {sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76}%
+                    {formatPercent(sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76)}
                   </span>
                   <span className="text-xs font-bold text-destructive">
-                    {branchData.collectionRate - (sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76)} pts
+                    {formatPoints(
+                      branchData.collectionRate -
+                        (sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76),
+                    )}
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  {Math.abs(branchData.collectionRate - (sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76))} pts deficit to reach closest peer
+                  {formatDecimal(
+                    Math.abs(
+                      branchData.collectionRate -
+                        (sortedBranches[sortedBranches.length - 2]?.collectionRate ?? 76),
+                    ),
+                  )}{" "}
+                  pts deficit to reach closest peer
                 </p>
               </div>
             ) : (
               <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 shadow-2xs">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Lagging Benchmark</span>
-                  <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">Rank #{sortedBranches.length}</span>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                    Lagging Benchmark
+                  </span>
+                  <span className="rounded bg-destructive/15 px-1.5 py-0.5 text-[10px] font-bold text-destructive">
+                    Rank #{sortedBranches.length}
+                  </span>
                 </div>
-                <p className="mt-1 text-sm font-bold text-foreground truncate">{laggingBranch.name}</p>
+                <p className="mt-1 text-sm font-bold text-foreground truncate">
+                  {laggingBranch.name}
+                </p>
                 <div className="mt-2 flex items-baseline justify-between">
-                  <span className="text-xl font-bold text-display text-foreground">{laggingBranch.collectionRate}%</span>
+                  <span className="text-xl font-bold text-display text-foreground">
+                    {formatPercent(laggingBranch.collectionRate)}
+                  </span>
                   <span className="text-xs font-bold text-success">
-                    +{branchData.collectionRate - laggingBranch.collectionRate} pts
+                    {formatPoints(branchData.collectionRate - laggingBranch.collectionRate, true)}
                   </span>
                 </div>
                 <p className="mt-1 text-[11px] text-muted-foreground">
-                  +{branchData.collectionRate - laggingBranch.collectionRate} pts above lowest regional cohort
+                  {formatPoints(branchData.collectionRate - laggingBranch.collectionRate, true)}{" "}
+                  above lowest regional cohort
                 </p>
               </div>
             )}
@@ -923,63 +1094,105 @@ function BranchRootCauseContent({
             {/* Side-by-Side Head to Head Metrics Grid */}
             <div className="grid gap-2 grid-cols-2 sm:grid-cols-5 border-t border-border/50 pt-3">
               <div className="rounded-lg border border-border/60 bg-card/60 p-2.5 text-center">
-                <span className="text-[10px] text-muted-foreground font-medium block">Collection Efficiency</span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  Collection Efficiency
+                </span>
                 <div className="mt-1 flex items-center justify-center gap-1.5 text-xs">
-                  <span className="font-bold text-foreground">{branchData.collectionRate}%</span>
+                  <span className="font-bold text-foreground">
+                    {formatPercent(branchData.collectionRate)}
+                  </span>
                   <span className="text-muted-foreground">vs</span>
-                  <span className="font-bold text-muted-foreground">{comparedBranch.collectionRate}%</span>
+                  <span className="font-bold text-muted-foreground">
+                    {formatPercent(comparedBranch.collectionRate)}
+                  </span>
                 </div>
-                <span className={`text-[11px] font-bold mt-0.5 block ${branchData.collectionRate >= comparedBranch.collectionRate ? "text-success" : "text-destructive"}`}>
-                  {branchData.collectionRate - comparedBranch.collectionRate >= 0 ? "+" : ""}{branchData.collectionRate - comparedBranch.collectionRate} pts
+                <span
+                  className={`text-[11px] font-bold mt-0.5 block ${branchData.collectionRate >= comparedBranch.collectionRate ? "text-success" : "text-destructive"}`}
+                >
+                  {formatPoints(branchData.collectionRate - comparedBranch.collectionRate, true)}
                 </span>
               </div>
 
               <div className="rounded-lg border border-border/60 bg-card/60 p-2.5 text-center">
-                <span className="text-[10px] text-muted-foreground font-medium block">Avg Resolution Days</span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  Avg Resolution Days
+                </span>
                 <div className="mt-1 flex items-center justify-center gap-1.5 text-xs">
-                  <span className="font-bold text-foreground">{branchData.avgDaysToResolve}d</span>
+                  <span className="font-bold text-foreground">
+                    {formatDays(branchData.avgDaysToResolve)}
+                  </span>
                   <span className="text-muted-foreground">vs</span>
-                  <span className="font-bold text-muted-foreground">{comparedBranch.avgDaysToResolve}d</span>
+                  <span className="font-bold text-muted-foreground">
+                    {formatDays(comparedBranch.avgDaysToResolve)}
+                  </span>
                 </div>
-                <span className={`text-[11px] font-bold mt-0.5 block ${branchData.avgDaysToResolve <= comparedBranch.avgDaysToResolve ? "text-success" : "text-destructive"}`}>
-                  {branchData.avgDaysToResolve <= comparedBranch.avgDaysToResolve ? "" : "+"}{branchData.avgDaysToResolve - comparedBranch.avgDaysToResolve}d
+                <span
+                  className={`text-[11px] font-bold mt-0.5 block ${branchData.avgDaysToResolve <= comparedBranch.avgDaysToResolve ? "text-success" : "text-destructive"}`}
+                >
+                  {branchData.avgDaysToResolve <= comparedBranch.avgDaysToResolve ? "" : "+"}
+                  {formatDays(branchData.avgDaysToResolve - comparedBranch.avgDaysToResolve)}
                 </span>
               </div>
 
               <div className="rounded-lg border border-border/60 bg-card/60 p-2.5 text-center">
-                <span className="text-[10px] text-muted-foreground font-medium block">PTP Kept %</span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  PTP Kept %
+                </span>
                 <div className="mt-1 flex items-center justify-center gap-1.5 text-xs">
-                  <span className="font-bold text-foreground">{branchData.ptpKept}%</span>
+                  <span className="font-bold text-foreground">
+                    {formatPercent(branchData.ptpKept)}
+                  </span>
                   <span className="text-muted-foreground">vs</span>
-                  <span className="font-bold text-muted-foreground">{comparedBranch.ptpKept}%</span>
+                  <span className="font-bold text-muted-foreground">
+                    {formatPercent(comparedBranch.ptpKept)}
+                  </span>
                 </div>
-                <span className={`text-[11px] font-bold mt-0.5 block ${branchData.ptpKept >= comparedBranch.ptpKept ? "text-success" : "text-destructive"}`}>
-                  {branchData.ptpKept - comparedBranch.ptpKept >= 0 ? "+" : ""}{branchData.ptpKept - comparedBranch.ptpKept} pts
+                <span
+                  className={`text-[11px] font-bold mt-0.5 block ${branchData.ptpKept >= comparedBranch.ptpKept ? "text-success" : "text-destructive"}`}
+                >
+                  {formatPoints(branchData.ptpKept - comparedBranch.ptpKept, true)}
                 </span>
               </div>
 
               <div className="rounded-lg border border-border/60 bg-card/60 p-2.5 text-center">
-                <span className="text-[10px] text-muted-foreground font-medium block">Contact Rate</span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  Contact Rate
+                </span>
                 <div className="mt-1 flex items-center justify-center gap-1.5 text-xs">
-                  <span className="font-bold text-foreground">{branchData.contactRate}%</span>
+                  <span className="font-bold text-foreground">
+                    {formatPercent(branchData.contactRate)}
+                  </span>
                   <span className="text-muted-foreground">vs</span>
-                  <span className="font-bold text-muted-foreground">{comparedBranch.contactRate}%</span>
+                  <span className="font-bold text-muted-foreground">
+                    {formatPercent(comparedBranch.contactRate)}
+                  </span>
                 </div>
-                <span className={`text-[11px] font-bold mt-0.5 block ${branchData.contactRate >= comparedBranch.contactRate ? "text-success" : "text-destructive"}`}>
-                  {branchData.contactRate - comparedBranch.contactRate >= 0 ? "+" : ""}{branchData.contactRate - comparedBranch.contactRate} pts
+                <span
+                  className={`text-[11px] font-bold mt-0.5 block ${branchData.contactRate >= comparedBranch.contactRate ? "text-success" : "text-destructive"}`}
+                >
+                  {formatPoints(branchData.contactRate - comparedBranch.contactRate, true)}
                 </span>
               </div>
 
               <div className="col-span-2 sm:col-span-1 rounded-lg border border-border/60 bg-card/60 p-2.5 text-center">
-                <span className="text-[10px] text-muted-foreground font-medium block">Branch vs Branch Status</span>
+                <span className="text-[10px] text-muted-foreground font-medium block">
+                  Branch vs Branch Status
+                </span>
                 <p className="mt-1 text-xs font-bold">
                   {branchData.collectionRate >= comparedBranch.collectionRate ? (
                     <span className="text-success inline-flex items-center gap-1">
-                      <TrendingUp className="size-3" /> Leading +{branchData.collectionRate - comparedBranch.collectionRate} pts
+                      <TrendingUp className="size-3" /> Leading +
+                      {formatPoints(
+                        branchData.collectionRate - comparedBranch.collectionRate,
+                        true,
+                      )}
                     </span>
                   ) : (
                     <span className="text-destructive inline-flex items-center gap-1">
-                      <TrendingDown className="size-3" /> Lagging -{Math.abs(branchData.collectionRate - comparedBranch.collectionRate)} pts
+                      <TrendingDown className="size-3" /> Lagging -
+                      {formatPoints(
+                        Math.abs(branchData.collectionRate - comparedBranch.collectionRate),
+                      )}
                     </span>
                   )}
                 </p>
@@ -987,15 +1200,20 @@ function BranchRootCauseContent({
                   vs {comparedBranch.name}
                 </span>
               </div>
+            </div>
+            {comparisonAIQuery.data?.data.narrative && (
+              <p className="border-t border-border/50 pt-3 text-xs leading-relaxed text-muted-foreground">
+                {comparisonAIQuery.data.data.narrative}
+              </p>
+            )}
           </div>
         </div>
-      </div>
 
         {/* 2. MAIN TWO-COLUMN WORKBENCH: SCROLLABLE 5 KPI CARDS ON LEFT + ALIGNED SUMMARY & ONE-LINERS ON RIGHT */}
         <GlassCard className="p-5 md:p-6 border border-border/80">
-          <div className="grid gap-6 lg:grid-cols-[330px_1fr] items-start">
+          <div className="grid min-w-0 gap-6 lg:grid-cols-[minmax(0,32fr)_minmax(0,68fr)] items-start">
             {/* Left column — Scrollable KPI Selection */}
-            <div className="space-y-3">
+            <div className="min-w-0 space-y-3">
               <div className="flex items-center justify-between pb-1 border-b border-border/50">
                 <span className="text-[11px] font-bold uppercase tracking-[.12em] text-muted-foreground">
                   KPI Selection
@@ -1043,7 +1261,8 @@ function BranchRootCauseContent({
 
                       <div className="mt-2.5 flex items-center justify-between text-xs text-muted-foreground">
                         <span>
-                          {branchData.name}: <strong className="text-foreground">{kpi.branchVal}</strong>
+                          {branchData.name}:{" "}
+                          <strong className="text-foreground">{kpi.branchVal}</strong>
                         </span>
                         <span>
                           Peer: <strong className="text-foreground">{kpi.peerVal}</strong>
@@ -1064,7 +1283,7 @@ function BranchRootCauseContent({
             </div>
 
             {/* Right column — Summary with Aligned One-Liner Insights */}
-            <div className="rounded-xl border border-border/70 bg-card/40 p-5 md:p-6 space-y-5">
+            <div className="min-w-0 rounded-xl border border-border/70 bg-card/40 p-5 md:p-6 space-y-5">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 border-b border-border/50 pb-3.5">
                 <div>
                   <h2 className="text-lg sm:text-xl font-bold text-display text-foreground">
@@ -1111,7 +1330,9 @@ function BranchRootCauseContent({
                     <span className="text-2xl font-bold text-display text-muted-foreground">
                       {comparedKpiMetric.valStr}
                     </span>
-                    <span className={`text-xs font-bold ${comparedKpiMetric.isAhead ? "text-success" : "text-destructive"}`}>
+                    <span
+                      className={`text-xs font-bold ${comparedKpiMetric.isAhead ? "text-success" : "text-destructive"}`}
+                    >
                       {comparedKpiMetric.deltaStr}
                     </span>
                   </div>
@@ -1119,10 +1340,10 @@ function BranchRootCauseContent({
 
                 <div className="rounded-xl border border-border/70 bg-card/60 p-4">
                   <div className="flex items-center justify-between gap-1">
-                    <p className="text-[11px] font-medium text-muted-foreground">Difference / Variance</p>
-                    <Status tone={activeKpi.tone}>
-                      {activeKpi.direction}
-                    </Status>
+                    <p className="text-[11px] font-medium text-muted-foreground">
+                      Difference / Variance
+                    </p>
+                    <Status tone={activeKpi.tone}>{activeKpi.direction}</Status>
                   </div>
                   <div className="mt-1">
                     <span
@@ -1142,7 +1363,7 @@ function BranchRootCauseContent({
                   Key Insights
                 </h4>
                 <div className="grid gap-2.5 sm:grid-cols-2">
-                  {activeKpi.oneLinerInsights.map((insight, idx) => (
+                  {displayedOneLinerInsights.map((insight, idx) => (
                     <div
                       key={idx}
                       className="rounded-xl border border-border/70 bg-card/60 p-3.5 flex items-start gap-2.5 transition hover:border-primary/30 hover:bg-card"
@@ -1165,8 +1386,10 @@ function BranchRootCauseContent({
 
               {/* Operational Rationale & Attribution */}
               <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-xs leading-relaxed text-foreground">
-                <strong className="text-primary font-bold block mb-1">Operational Rationale & Attribution:</strong>
-                {activeKpi.attributionRationale}
+                <strong className="text-primary font-bold block mb-1">
+                  Operational Rationale & Attribution:
+                </strong>
+                {aiKpiInsight?.frontlineDriver ?? activeKpi.attributionRationale}
               </div>
             </div>
           </div>
@@ -1177,27 +1400,17 @@ function BranchRootCauseContent({
           <div className="flex items-center gap-2 mb-3.5 pb-2.5 border-b border-primary/15">
             <Target className="size-4 text-primary" />
             <h3 className="text-xs font-bold uppercase tracking-[.14em] text-primary">
-              Key Summary · {activeKpi.name}
+              Key Summary · Overall Branch Performance
             </h3>
           </div>
 
-          <div className="space-y-2.5">
-            {keySummaryPoints.map((pt, index) => (
-              <div key={index} className="flex items-start gap-2.5 text-xs sm:text-sm">
-                <span className="flex size-1.5 rounded-full bg-primary mt-2 shrink-0" />
-                <div className="leading-relaxed">
-                  <strong className={`font-bold ${pt.isHighlight || pt.isFocus ? "text-primary" : "text-foreground"}`}>
-                    {pt.label}:
-                  </strong>{" "}
-                  <span className={pt.isHighlight || pt.isFocus ? "font-semibold text-foreground" : "text-muted-foreground"}>
-                    {pt.text}
-                  </span>
-                </div>
-              </div>
-            ))}
+          <div className="text-xs sm:text-sm leading-relaxed text-foreground">
+            {overallAIQuery.data?.data.narrative ?? overallFallback}
           </div>
         </GlassCard>
       </div>
     </AppShell>
   );
 }
+
+export default RootCauseRoute;

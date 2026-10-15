@@ -75,7 +75,7 @@ interface DateContextValue {
 const DateContext = createContext<DateContextValue | null>(null);
 
 const STORAGE_KEY = "recoveryops-selected-business-date";
-const DEFAULT_DATE = "2026-09-15";
+const DEFAULT_DATE = "2026-09-30";
 
 export function formatDateLabel(isoStr: string): string {
   const parts = isoStr.split("-");
@@ -83,7 +83,20 @@ export function formatDateLabel(isoStr: string): string {
   const year = parts[0];
   const monthIdx = parseInt(parts[1]!, 10) - 1;
   const day = parseInt(parts[2]!, 10);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   return `${months[monthIdx] || ""} ${day}, ${year}`;
 }
 
@@ -92,7 +105,20 @@ export function formatQuarterButtonLabel(isoStr: string): string {
   if (parts.length !== 3) return "Q3 · Jul–Sep";
   const monthIdx = parseInt(parts[1]!, 10) - 1;
   const day = parseInt(parts[2]!, 10);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
   const dayStr = day < 10 ? `0${day}` : `${day}`;
   return `Q3 · ${months[monthIdx]} ${dayStr}`;
 }
@@ -125,20 +151,21 @@ export function DateProvider({ children }: { children: ReactNode }) {
 
   const isDateInQ3 = (date: string) => date >= "2026-07-01" && date <= "2026-09-30";
 
-  const { formattedDate, formattedButtonLabel, selectedYear, selectedMonth, selectedDay } = useMemo(() => {
-    const parts = selectedDate.split("-");
-    const y = parseInt(parts[0] || "2026", 10);
-    const m = parseInt(parts[1] || "9", 10);
-    const d = parseInt(parts[2] || "15", 10);
+  const { formattedDate, formattedButtonLabel, selectedYear, selectedMonth, selectedDay } =
+    useMemo(() => {
+      const parts = selectedDate.split("-");
+      const y = parseInt(parts[0] || "2026", 10);
+      const m = parseInt(parts[1] || "9", 10);
+      const d = parseInt(parts[2] || "15", 10);
 
-    return {
-      formattedDate: formatDateLabel(selectedDate),
-      formattedButtonLabel: formatQuarterButtonLabel(selectedDate),
-      selectedYear: y,
-      selectedMonth: m,
-      selectedDay: d,
-    };
-  }, [selectedDate]);
+      return {
+        formattedDate: formatDateLabel(selectedDate),
+        formattedButtonLabel: formatQuarterButtonLabel(selectedDate),
+        selectedYear: y,
+        selectedMonth: m,
+        selectedDay: d,
+      };
+    }, [selectedDate]);
 
   return (
     <DateContext.Provider

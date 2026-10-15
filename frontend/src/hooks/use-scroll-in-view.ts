@@ -7,7 +7,7 @@ interface UseScrollInViewOptions {
 }
 
 export function useScrollInView<T extends HTMLElement = HTMLDivElement>(
-  options: UseScrollInViewOptions = {}
+  options: UseScrollInViewOptions = {},
 ) {
   const { threshold = 0.15, rootMargin = "0px", triggerOnce = false } = options;
   const ref = useRef<T | null>(null);
@@ -36,7 +36,7 @@ export function useScrollInView<T extends HTMLElement = HTMLDivElement>(
           setIsInView(false);
         }
       },
-      { threshold, rootMargin }
+      { threshold, rootMargin },
     );
 
     observer.observe(element);

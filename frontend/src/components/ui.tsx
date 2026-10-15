@@ -19,23 +19,19 @@ export function Button({
         size === "md" && "h-9 px-3.5 text-sm",
         size === "lg" && "h-11 px-5 text-base",
         variant === "primary" && "bg-primary text-primary-foreground shadow-sm hover:bg-primary/90",
-        variant === "secondary" && "border border-border bg-card/70 text-foreground hover:bg-accent",
+        variant === "secondary" &&
+          "border border-border bg-card/70 text-foreground hover:bg-accent",
         variant === "ghost" && "text-muted-foreground hover:bg-accent hover:text-foreground",
-        variant === "danger" && "bg-destructive text-destructive-foreground hover:bg-destructive/90",
-        className
+        variant === "danger" &&
+          "bg-destructive text-destructive-foreground hover:bg-destructive/90",
+        className,
       )}
       {...props}
     />
   );
 }
 
-export function GlassCard({
-  children,
-  className,
-}: {
-  children: ReactNode;
-  className?: string;
-}) {
+export function GlassCard({ children, className }: { children: ReactNode; className?: string }) {
   return <section className={cn("glass rounded-2xl", className)}>{children}</section>;
 }
 
@@ -59,7 +55,7 @@ export function Status({
         normalizedTone === "warning" && "bg-warning/15 text-warning-foreground",
         normalizedTone === "info" && "bg-primary/10 text-primary",
         normalizedTone === "neutral" && "bg-muted text-muted-foreground",
-        className
+        className,
       )}
     >
       {children}
@@ -74,7 +70,7 @@ export function MetricBar({
   className,
 }: {
   value: number;
-  peer?: number;
+  peer?: number | undefined;
   tone?: "primary" | "danger" | "warn" | "warning" | "success" | "good";
   className?: string;
 }) {
@@ -96,7 +92,7 @@ export function MetricBar({
             normalizedTone === "primary" && "bg-primary",
             normalizedTone === "danger" && "bg-destructive",
             normalizedTone === "warning" && "bg-warning",
-            normalizedTone === "success" && "bg-success"
+            normalizedTone === "success" && "bg-success",
           )}
           style={{ width: isInView ? `${clampedValue}%` : "0%" }}
         />
@@ -107,7 +103,7 @@ export function MetricBar({
         <div
           className={cn(
             "absolute -top-1 -bottom-1 z-10 w-0.5 rounded-full bg-foreground shadow-xs transition-all duration-800 delay-200 ease-out",
-            isInView ? "scale-y-100 opacity-90" : "scale-y-0 opacity-0"
+            isInView ? "scale-y-100 opacity-90" : "scale-y-0 opacity-0",
           )}
           style={{ left: `${clampedPeer}%` }}
           title={`Peer average: ${clampedPeer}%`}

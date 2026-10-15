@@ -3,15 +3,22 @@ import { ArrowRight, Building2, MapPin } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { AppShell } from "@/components/app-shell";
 import { useBranch, type Branch } from "@/hooks/branch-context";
+import { useDate } from "@/hooks/date-context";
 import { api, formatMetricValue, getMetric, type BranchSummary } from "@/lib/api";
 
 export const Route = createFileRoute("/customer-analytics")({
   head: () => ({
     meta: [
       { title: "Branch Directory — Customer Level — RecoveryOps" },
-      { name: "description", content: "Select a branch to view customer portfolios and priority worklists." },
+      {
+        name: "description",
+        content: "Select a branch to view customer portfolios and priority worklists.",
+      },
       { property: "og:title", content: "Branch Directory — Customer Level — RecoveryOps" },
-      { property: "og:description", content: "Select a branch to view customer portfolios and priority worklists." },
+      {
+        property: "og:description",
+        content: "Select a branch to view customer portfolios and priority worklists.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -20,17 +27,19 @@ export const Route = createFileRoute("/customer-analytics")({
 });
 
 function estimatedAccounts(b: BranchSummary): number {
-  const dpd = getMetric(b.metrics, "delinquency_rate_30_plus");
-  if (dpd && dpd.numerator != null && dpd.value != null && dpd.value > 0) {
-    return Math.round(dpd.numerator / dpd.value);
-  }
-  return 0;
+  // dpd_30_plus_concentration is seeded with denominator = total active accounts
+  const dpd = getMetric(b.metrics, "dpd_30_plus_concentration");
+  return dpd?.denominator ?? 0;
 }
 
 function CustomerAnalytics() {
   const { selectedBranch, selectBranch } = useBranch();
   const navigate = useNavigate();
-  const branchesQuery = useQuery({ queryKey: ["branches"], queryFn: () => api.getBranches() });
+  const { selectedDate } = useDate();
+  const branchesQuery = useQuery({
+    queryKey: ["branches", selectedDate],
+    queryFn: () => api.getBranches(selectedDate),
+  });
   const branches = branchesQuery.data?.data ?? [];
   const totalAccounts = branches.reduce((sum, b) => sum + estimatedAccounts(b), 0);
 
@@ -55,7 +64,8 @@ function CustomerAnalytics() {
             <div>
               <h2 className="text-sm font-bold text-display">Active Regional Branch Portfolios</h2>
               <p className="text-xs text-muted-foreground">
-                {branches.length} operational branches • {totalAccounts.toLocaleString()} total customer accounts
+                {branches.length} operational branches • {totalAccounts.toLocaleString()} total
+                customer accounts
               </p>
             </div>
           </div>
@@ -65,7 +75,9 @@ function CustomerAnalytics() {
           </div>
         </div>
 
-        {branchesQuery.isLoading && <p className="text-sm text-muted-foreground">Loading branches…</p>}
+        {branchesQuery.isLoading && (
+          <p className="text-sm text-muted-foreground">Loading branches…</p>
+        )}
 
         <div className="space-y-2.5">
           {branches.map((branch) => {
@@ -107,8 +119,8 @@ function CustomerAnalytics() {
                           isTopPerformer
                             ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
                             : isAtRisk
-                            ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                            : "bg-primary/10 text-primary border border-primary/20"
+                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
+                              : "bg-primary/10 text-primary border border-primary/20"
                         }`}
                       >
                         {isTopPerformer ? "Top Tier" : isAtRisk ? "At Risk" : "Stable"}
@@ -120,7 +132,10 @@ function CustomerAnalytics() {
                         <span>{branch.region}</span>
                       </div>
                       <span>•</span>
-                      <span>30+ DPD {formatMetricValue(getMetric(branch.metrics, "delinquency_rate_30_plus"))}</span>
+                      <span>
+                        30+ DPD{" "}
+                        {formatMetricValue(getMetric(branch.metrics, "delinquency_rate_30_plus"))}
+                      </span>
                     </div>
                   </div>
                 </div>

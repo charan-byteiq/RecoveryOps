@@ -52,7 +52,9 @@ export function BranchProvider({ children }: { children: ReactNode }) {
   const clearBranch = () => setSelectedBranch(null);
 
   return (
-    <BranchContext.Provider value={{ selectedBranch, selectBranch, clearBranch, hasBranch: selectedBranch !== null }}>
+    <BranchContext.Provider
+      value={{ selectedBranch, selectBranch, clearBranch, hasBranch: selectedBranch !== null }}
+    >
       {children}
     </BranchContext.Provider>
   );

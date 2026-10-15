@@ -14,6 +14,13 @@ class Settings(BaseSettings):
     port: int = 3001
     cors_origin: str = "http://localhost:8081,http://localhost:3000,http://localhost:5173"
     node_env: str = "development"
+    openrouter_api_key: str | None = None
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+    openrouter_model: str = "z-ai/glm-5.3-flash"
+    openrouter_timeout_seconds: float = 20.0
+    openrouter_max_retries: int = 2
+    openrouter_http_referer: str = "http://localhost:5173"
+    openrouter_app_title: str = "RecoveryOps"
 
     @property
     def async_database_url(self) -> str:

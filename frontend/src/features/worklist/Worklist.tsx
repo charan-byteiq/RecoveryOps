@@ -26,22 +26,24 @@ export function Worklist() {
   const [q, setQ] = useState("");
   const [dpdFilter, setDpdFilter] = useState<"All" | "1-30" | "31-60" | "61+">("All");
   const [riskFilter, setRiskFilter] = useState<"All" | "High" | "Medium" | "Low">("All");
-  const [ptpFilter, setPtpFilter] = useState<"All" | "Broken" | "Due today" | "High Priority">("All");
+  const [ptpFilter, setPtpFilter] = useState<"All" | "Broken" | "Due today" | "High Priority">(
+    "All",
+  );
 
   const analytics = useMemo(
     () => getCustomerAnalytics(hasBranch ? selectedBranch!.sourceBranchCode : null, selectedDate),
-    [hasBranch, selectedBranch, selectedDate]
+    [hasBranch, selectedBranch, selectedDate],
   );
 
   // Filter by branch context & date snapshot
   const branchFiltered = useMemo(
     () => getCustomersForDate(selectedDate, hasBranch ? selectedBranch!.sourceBranchCode : null),
-    [selectedDate, hasBranch, selectedBranch]
+    [selectedDate, hasBranch, selectedBranch],
   );
 
   // Apply search & multi-dimensional filters
   const rows = useMemo(() => {
-    let result = branchFiltered.filter((c) => {
+    const result = branchFiltered.filter((c) => {
       // Search matches customer name, account number, customer ID
       const matchesSearch =
         q === "" ||
@@ -55,10 +57,10 @@ export function Worklist() {
         dpdFilter === "All"
           ? true
           : dpdFilter === "1-30"
-          ? c.dpd <= 30
-          : dpdFilter === "31-60"
-          ? c.dpd > 30 && c.dpd <= 60
-          : c.dpd > 60;
+            ? c.dpd <= 30
+            : dpdFilter === "31-60"
+              ? c.dpd > 30 && c.dpd <= 60
+              : c.dpd > 60;
 
       // Risk filter
       const matchesRisk = riskFilter === "All" ? true : c.risk === riskFilter;
@@ -68,10 +70,10 @@ export function Worklist() {
         ptpFilter === "All"
           ? true
           : ptpFilter === "Broken"
-          ? c.ptp === "Broken"
-          : ptpFilter === "Due today"
-          ? c.ptp === "Due today"
-          : c.priority === "High";
+            ? c.ptp === "Broken"
+            : ptpFilter === "Due today"
+              ? c.ptp === "Due today"
+              : c.priority === "High";
 
       return matchesSearch && matchesSegment && matchesDpd && matchesRisk && matchesPtp;
     });
@@ -92,7 +94,8 @@ export function Worklist() {
   }, [branchFiltered, q, segment, dpdFilter, riskFilter, ptpFilter]);
 
   const contextLabel = hasBranch ? selectedBranch!.name : "All Branches Network";
-  const hasActiveFilters = q !== "" || dpdFilter !== "All" || riskFilter !== "All" || ptpFilter !== "All";
+  const hasActiveFilters =
+    q !== "" || dpdFilter !== "All" || riskFilter !== "All" || ptpFilter !== "All";
 
   const resetFilters = () => {
     setQ("");
@@ -111,26 +114,34 @@ export function Worklist() {
         {/* KPI SUMMARY ROW */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <GlassCard className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Active Queue Size</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+              Active Queue Size
+            </p>
             <p className="mt-1 text-2xl font-bold text-display text-foreground">{rows.length}</p>
             <p className="text-xs text-muted-foreground">High-attention accounts</p>
           </GlassCard>
           <GlassCard className="p-4 border-destructive/25 bg-destructive/5">
-            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-destructive">High Priority Action</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-destructive">
+              High Priority Action
+            </p>
             <p className="mt-1 text-2xl font-bold text-display text-destructive">
               {branchFiltered.filter((c) => c.priority === "High").length}
             </p>
             <p className="text-xs text-muted-foreground">Immediate triage required</p>
           </GlassCard>
           <GlassCard className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Broken PTP Backlog</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+              Broken PTP Backlog
+            </p>
             <p className="mt-1 text-2xl font-bold text-display text-warning-foreground">
               {branchFiltered.filter((c) => c.ptp === "Broken").length}
             </p>
             <p className="text-xs text-muted-foreground">Re-commitment intervention</p>
           </GlassCard>
           <GlassCard className="p-4">
-            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">30+ DPD Hardening</p>
+            <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+              30+ DPD Hardening
+            </p>
             <p className="mt-1 text-2xl font-bold text-display text-foreground">
               {branchFiltered.filter((c) => c.dpd > 30).length}
             </p>
@@ -148,7 +159,8 @@ export function Worklist() {
                 <Status tone={rows.length > 0 ? "info" : "neutral"}>{rows.length} accounts</Status>
               </div>
               <p className="text-xs text-muted-foreground">
-                High-attention accounts ordered by urgency, outstanding exposure, and hardening default risk · {contextLabel}
+                High-attention accounts ordered by urgency, outstanding exposure, and hardening
+                default risk · {contextLabel}
               </p>
             </div>
 
@@ -245,7 +257,11 @@ export function Worklist() {
               <span className="flex items-center gap-1.5 font-medium">
                 <Sparkles className="size-3.5" /> High-attention accounts filtered by diagnostic gap
               </span>
-              <Link to="/worklist" search={{ segment: undefined }} className="font-bold underline hover:opacity-80">
+              <Link
+                to="/worklist"
+                search={{ segment: undefined }}
+                className="font-bold underline hover:opacity-80"
+              >
                 Clear segment
               </Link>
             </div>
@@ -306,8 +322,8 @@ export function Worklist() {
                               c.dpd > 60
                                 ? "bg-destructive/15 text-destructive"
                                 : c.dpd > 30
-                                ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
-                                : "bg-primary/10 text-primary"
+                                  ? "bg-amber-500/15 text-amber-700 dark:text-amber-400"
+                                  : "bg-primary/10 text-primary"
                             }`}
                           >
                             {c.dpd} DPD
@@ -315,18 +331,36 @@ export function Worklist() {
                         </td>
 
                         {/* Outstanding Exposure */}
-                        <td className="px-5 py-3.5 font-bold text-display text-foreground">{c.amount}</td>
+                        <td className="px-5 py-3.5 font-bold text-display text-foreground">
+                          {c.amount}
+                        </td>
 
                         {/* Risk Tier */}
                         <td className="px-5 py-3.5">
-                          <Status tone={c.risk === "High" ? "danger" : c.risk === "Medium" ? "warning" : "success"}>
+                          <Status
+                            tone={
+                              c.risk === "High"
+                                ? "danger"
+                                : c.risk === "Medium"
+                                  ? "warning"
+                                  : "success"
+                            }
+                          >
                             {c.risk}
                           </Status>
                         </td>
 
                         {/* Priority */}
                         <td className="px-5 py-3.5">
-                          <Status tone={c.priority === "High" ? "danger" : c.priority === "Medium" ? "warning" : "success"}>
+                          <Status
+                            tone={
+                              c.priority === "High"
+                                ? "danger"
+                                : c.priority === "Medium"
+                                  ? "warning"
+                                  : "success"
+                            }
+                          >
                             {c.priority}
                           </Status>
                         </td>
@@ -338,8 +372,8 @@ export function Worklist() {
                               isBrokenPtp
                                 ? "font-bold text-destructive"
                                 : isDueToday
-                                ? "font-bold text-amber-600 dark:text-amber-400"
-                                : "text-muted-foreground"
+                                  ? "font-bold text-amber-600 dark:text-amber-400"
+                                  : "text-muted-foreground"
                             }`}
                           >
                             {c.ptp}
@@ -373,7 +407,9 @@ export function Worklist() {
             <span>
               Showing {rows.length} of {branchFiltered.length} accounts · {contextLabel}
             </span>
-            <span className="font-medium text-foreground">Operational Triage: Urgency & Exposure Priority</span>
+            <span className="font-medium text-foreground">
+              Operational Triage: Urgency & Exposure Priority
+            </span>
           </div>
         </GlassCard>
       </div>

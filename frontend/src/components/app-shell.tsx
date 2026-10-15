@@ -42,7 +42,11 @@ export function AppShell({
   const [scrollProgress, setScrollProgress] = useState(0);
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   const { selectedBranch, selectBranch, clearBranch, hasBranch } = useBranch();
-  const branchesQuery = useQuery({ queryKey: ["branches"], queryFn: () => api.getBranches() });
+  const { selectedDate } = useDate();
+  const branchesQuery = useQuery({
+    queryKey: ["branches", selectedDate],
+    queryFn: () => api.getBranches(selectedDate),
+  });
   const navigate = useNavigate();
 
   // Dynamic Blue Scroll Progress Line tracking viewport depth
@@ -135,7 +139,11 @@ export function AppShell({
             >
               <PanelLeftClose className="size-4" />
             </button>
-            <button aria-label="Close" className="ml-auto md:hidden shrink-0" onClick={() => setOpen(false)}>
+            <button
+              aria-label="Close"
+              className="ml-auto md:hidden shrink-0"
+              onClick={() => setOpen(false)}
+            >
               <X className="size-5" />
             </button>
           </div>
@@ -277,7 +285,11 @@ export function AppShell({
 
         <main className="min-w-0 flex-1">
           <header className="glass-strong sticky top-0 z-20 flex min-h-16 items-center gap-3 border-b px-4 py-3 md:px-6 relative">
-            <button aria-label="Open navigation" className="md:hidden" onClick={() => setOpen(true)}>
+            <button
+              aria-label="Open navigation"
+              className="md:hidden"
+              onClick={() => setOpen(true)}
+            >
               <Menu className="size-5" />
             </button>
             {!desktopSidebarOpen && (
@@ -321,7 +333,11 @@ export function AppShell({
               <Button variant="secondary" className="size-9 px-0" aria-label="Search">
                 <Search className="size-4" />
               </Button>
-              <Button variant="secondary" className="relative size-9 px-0" aria-label="Notifications">
+              <Button
+                variant="secondary"
+                className="relative size-9 px-0"
+                aria-label="Notifications"
+              >
                 <Bell className="size-4" />
                 <span className="absolute right-2 top-2 size-1.5 rounded-full bg-destructive" />
               </Button>

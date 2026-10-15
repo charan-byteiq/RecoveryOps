@@ -1,6 +1,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
+# pyrefly: ignore [missing-import]
 from pydantic import BaseModel, ConfigDict
 
 
@@ -68,7 +69,17 @@ class DriverItem(CamelBase):
     branch_value: float
     network_value: float
     delta: float
+    unit: str
     account_count: int | None
+
+
+class RootCauseDriverItem(CamelBase):
+    metric_code: str
+    name: str
+    value: float | None
+    unit: str
+    availability: Literal["available", "unavailable", "stale"]
+    contributing_segments: list[dict[str, Any]]
 
 
 class InsightEvidenceItem(CamelBase):
@@ -107,11 +118,19 @@ class BranchOverviewResponse(CamelBase):
     meta: ApiMeta
 
 
+class PerformanceComparisonPeriod(CamelBase):
+    label: str
+    start: str
+    end: str
+
+
 class PerformanceData(CamelBase):
     branch: BranchData
     dpd_distribution: list[DpdBucket]
     trends: dict[str, list[dict[str, Any]]]
     outcomes: dict[str, MetricValue]
+    comparison_periods: list[PerformanceComparisonPeriod]
+    monthly_kpis: dict[str, list[MetricValue]]
 
 
 class BranchPerformanceResponse(CamelBase):
@@ -133,6 +152,7 @@ class BranchPeersResponse(CamelBase):
 class DriversData(CamelBase):
     branch: BranchData
     drivers: list[DriverItem]
+    root_cause_drivers: list[RootCauseDriverItem]
 
 
 class BranchDriversResponse(CamelBase):
@@ -143,6 +163,66 @@ class BranchDriversResponse(CamelBase):
 class BranchInsightsResponse(CamelBase):
     data: list[InsightItem]
     meta: ApiMeta
+
+
+class AIInsightEvidence(CamelBase):
+    metric_code: str
+    branch_value: float | None
+    benchmark_value: float | None = None
+    delta: float | None = None
+    unit: str
+    source: str
+
+
+class AIInsightMeta(CamelBase):
+    insight_type: Literal["branch_comparison", "selected_kpi", "overall_branch"]
+    status: Literal["ai", "fallback", "unavailable"]
+    model_version: str
+    generated_at: datetime
+    source_data_version: str
+
+
+class BranchComparisonInsight(CamelBase):
+    narrative: str
+    strengths: list[str]
+    weaknesses: list[str]
+    recommendations: list[str]
+    evidence: list[AIInsightEvidence]
+
+
+class SelectedKpiInsight(CamelBase):
+    metric_code: str
+    narrative: str
+    performance_direction: Literal["favorable", "unfavorable", "neutral", "unavailable"]
+    core_variance: str | None = None
+    frontline_driver: str | None = None
+    priority_action: str | None = None
+    cohort_focus: str | None = None
+    recommendation: str
+    evidence: list[AIInsightEvidence]
+
+
+class OverallBranchInsight(CamelBase):
+    narrative: str
+    evidence: list[AIInsightEvidence]
+
+
+class BranchComparisonAIResponse(CamelBase):
+    data: BranchComparisonInsight
+    meta: ApiMeta
+    ai: AIInsightMeta
+
+
+class SelectedKpiAIResponse(CamelBase):
+    data: SelectedKpiInsight
+    meta: ApiMeta
+    ai: AIInsightMeta
+
+
+class OverallBranchAIResponse(CamelBase):
+    data: OverallBranchInsight
+    meta: ApiMeta
+    ai: AIInsightMeta
 
 
 class BranchesResponse(CamelBase):

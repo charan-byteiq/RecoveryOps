@@ -17,7 +17,14 @@ import {
   WalletCards,
   X,
 } from "lucide-react";
-import { ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip as RechartsTooltip } from "recharts";
+import {
+  ResponsiveContainer,
+  LineChart,
+  Line,
+  XAxis,
+  YAxis,
+  Tooltip as RechartsTooltip,
+} from "recharts";
 import { toast } from "sonner";
 import { AppShell } from "@/components/app-shell";
 import { Button, GlassCard, Status } from "@/components/ui";
@@ -28,9 +35,15 @@ export const Route = createFileRoute("/customers/$customerId")({
   head: () => ({
     meta: [
       { title: "Customer 360 Workspace — RecoveryOps" },
-      { name: "description", content: "Customer priority explanation, next best action and outcome capture." },
+      {
+        name: "description",
+        content: "Customer priority explanation, next best action and outcome capture.",
+      },
       { property: "og:title", content: "Customer 360 Workspace — RecoveryOps" },
-      { property: "og:description", content: "Customer priority explanation, next best action and outcome capture." },
+      {
+        property: "og:description",
+        content: "Customer priority explanation, next best action and outcome capture.",
+      },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
     ],
@@ -48,45 +61,55 @@ interface TimelineItem {
   isAlert?: boolean;
 }
 
+function CustomerNotFound() {
+  return (
+    <AppShell title="Customer Not Found" section="Customer Level" subtitle="Collections profile">
+      <div className="mx-auto max-w-[1280px] p-8 text-center">
+        <p className="text-muted-foreground">Customer record not found.</p>
+        <Link to="/worklist" className="mt-4 inline-block font-semibold text-primary underline">
+          Return to Worklist
+        </Link>
+      </div>
+    </AppShell>
+  );
+}
+
 function CustomerProfile() {
   const { customerId } = Route.useParams();
   const { selectedDate, formattedDate } = useDate();
 
-  // Find customer snapshot as of the selected global business date
-  const customerList = getCustomersForDate(selectedDate);
-  const customer = customerList.find((c) => c.id === customerId);
-
-  // Fallback if not found
-  if (!customer) {
-    return (
-      <AppShell title="Customer Not Found" section="Customer Level" subtitle="Collections profile">
-        <div className="mx-auto max-w-[1280px] p-8 text-center">
-          <p className="text-muted-foreground">Customer record not found.</p>
-          <Link to="/worklist" className="mt-4 inline-block font-semibold text-primary underline">
-            Return to Worklist
-          </Link>
-        </div>
-      </AppShell>
-    );
-  }
-
-  const detail = getCustomerDetailContext(customer.id, selectedDate);
-
-  // Local state for interactive demo flows
+  // All hooks must be called before any early return.
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [humanApproved, setHumanApproved] = useState(false);
   const [selectedOutcome, setSelectedOutcome] = useState("Promise to Pay");
   const [ptpAmountInput, setPtpAmountInput] = useState("$1,200");
   const [ptpDateInput, setPtpDateInput] = useState("2026-09-27");
-  const [notesInput, setNotesInput] = useState("Customer confirmed salary credit and agreed to honor partial commitment.");
+  const [notesInput, setNotesInput] = useState(
+    "Customer confirmed salary credit and agreed to honor partial commitment.",
+  );
+  const [timelineEvents, setTimelineEvents] = useState<TimelineItem[]>([]);
 
-  // Timeline events initialized from date-filtered snapshot (future events hidden)
-  const [timelineEvents, setTimelineEvents] = useState<TimelineItem[]>(detail.timeline);
+  // Find customer snapshot as of the selected global business date
+  const customerList = useMemo(() => getCustomersForDate(selectedDate), [selectedDate]);
+  const customer = useMemo(
+    () => customerList.find((c) => c.id === customerId),
+    [customerList, customerId],
+  );
 
   // Synchronize timeline with selected business date
   useEffect(() => {
-    setTimelineEvents(detail.timeline);
-  }, [selectedDate, customerId]);
+    if (customer) {
+      const d = getCustomerDetailContext(customer.id, selectedDate);
+      setTimelineEvents(d.timeline);
+    }
+  }, [selectedDate, customerId, customer]);
+
+  // Fallback if not found
+  if (!customer) {
+    return <CustomerNotFound />;
+  }
+
+  const detail = getCustomerDetailContext(customer.id, selectedDate);
 
   const handleSaveOutcome = () => {
     // Append to timeline associated with current working snapshot date
@@ -136,37 +159,47 @@ function CustomerProfile() {
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-2xl font-bold text-display">{customer.name}</h2>
                 <Status tone="danger">Priority · {customer.priority}</Status>
-                <Status tone={customer.risk === "High" ? "danger" : "warn"}>Risk · {customer.risk}</Status>
-                <Status tone={customer.contact === "High" ? "good" : "neutral"}>Contact · {customer.contact}</Status>
+                <Status tone={customer.risk === "High" ? "danger" : "warn"}>
+                  Risk · {customer.risk}
+                </Status>
+                <Status tone={customer.contact === "High" ? "good" : "neutral"}>
+                  Contact · {customer.contact}
+                </Status>
               </div>
               <p className="mt-1.5 text-xs text-muted-foreground">
                 <span className="font-semibold text-foreground">{customer.id}</span> • Account{" "}
-                <span className="font-semibold text-foreground">{customer.account}</span> • {detail.product} •{" "}
-                {customer.branch}
+                <span className="font-semibold text-foreground">{customer.account}</span> •{" "}
+                {detail.product} • {customer.branch}
               </p>
             </div>
 
             {/* KPI Badges */}
             <div className="flex flex-wrap items-center gap-3">
               <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[90px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Current DPD</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+                  Current DPD
+                </p>
                 <p className="text-xl font-bold text-destructive">{customer.dpd} DPD</p>
               </div>
 
               <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[110px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">Outstanding</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+                  Outstanding
+                </p>
                 <p className="text-xl font-bold text-display">{customer.amount}</p>
               </div>
 
               <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[100px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">PTP Status</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
+                  PTP Status
+                </p>
                 <p
                   className={`text-base font-bold ${
                     customer.ptp === "Broken"
                       ? "text-destructive"
                       : customer.ptp === "Due today"
-                      ? "text-warning-foreground"
-                      : "text-muted-foreground"
+                        ? "text-warning-foreground"
+                        : "text-muted-foreground"
                   }`}
                 >
                   {customer.ptp}
@@ -194,43 +227,77 @@ function CustomerProfile() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-primary">
                   <WalletCards className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">1. Payment History</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
+                    1. Payment History
+                  </h3>
                 </div>
-                <span className="text-xs font-semibold text-foreground/80">{detail.paymentBehaviour.consistencyRatio}</span>
+                <span className="text-xs font-semibold text-foreground/80">
+                  {detail.paymentBehaviour.consistencyRatio}
+                </span>
               </div>
               <div className="mt-3.5 space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Consistency:</span>
-                  <span className="font-semibold text-foreground">{detail.paymentBehaviour.consistencyRatio} ({detail.paymentBehaviour.consistencyPct}%)</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Consistency:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.paymentBehaviour.consistencyRatio} (
+                    {detail.paymentBehaviour.consistencyPct}%)
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Last payment:</span>
-                  <span className="font-semibold text-foreground">{detail.paymentBehaviour.lastAmount} ({detail.paymentBehaviour.lastDate})</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Last payment:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.paymentBehaviour.lastAmount} ({detail.paymentBehaviour.lastDate})
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Prob. of next bracket:</span>
-                  <span className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Prob. of next bracket:
+                  </span>
+                  <span
+                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
                     {detail.paymentBehaviour.probNextBracket}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Prob. of charge-off:</span>
-                  <span className={`font-bold ${customer.dpd > 30 ? "text-destructive" : "text-warning-foreground"}`}>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Prob. of charge-off:
+                  </span>
+                  <span
+                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : "text-warning-foreground"}`}
+                  >
                     {detail.paymentBehaviour.probChargeOff}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">PTPs fulfilled:</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    PTPs fulfilled:
+                  </span>
                   <span className="font-semibold text-foreground">
-                    {detail.paymentBehaviour.ptpFulfilled} of {detail.paymentBehaviour.ptpMade} ({Math.round((detail.paymentBehaviour.ptpFulfilled / detail.paymentBehaviour.ptpMade) * 100)}%)
+                    {detail.paymentBehaviour.ptpFulfilled} of {detail.paymentBehaviour.ptpMade} (
+                    {Math.round(
+                      (detail.paymentBehaviour.ptpFulfilled / detail.paymentBehaviour.ptpMade) *
+                        100,
+                    )}
+                    %)
                   </span>
                 </div>
               </div>
             </div>
             <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span className={`font-bold ${customer.risk === "High" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
+              <span
+                className={`font-bold ${customer.risk === "High" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+              >
                 {customer.risk === "High" ? "Irregular" : "Verified"}
-              </span> · {customer.risk === "High" ? "Cash flow volatility noted" : "Repayment history in good standing"}
+              </span>{" "}
+              ·{" "}
+              {customer.risk === "High"
+                ? "Cash flow volatility noted"
+                : "Repayment history in good standing"}
             </div>
           </GlassCard>
 
@@ -240,35 +307,57 @@ function CustomerProfile() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
                   <Phone className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">2. Outreach Analysis</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
+                    2. Outreach Analysis
+                  </h3>
                 </div>
                 <Status tone="good">{detail.outreach.contactRate}% Reach</Status>
               </div>
               <div className="mt-3.5 space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Total outreach:</span>
-                  <span className="font-semibold text-foreground">{detail.outreach.totalAttempts} touches recorded</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Total outreach:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.outreach.totalAttempts} touches recorded
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Successful contacts:</span>
-                  <span className="font-semibold text-foreground">{detail.outreach.successful} of {detail.outreach.totalAttempts} ({detail.outreach.contactRate}%)</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Successful contacts:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.outreach.successful} of {detail.outreach.totalAttempts} (
+                    {detail.outreach.contactRate}%)
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Preferred channel:</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Preferred channel:
+                  </span>
                   <span className="font-bold text-primary">{detail.outreach.preferredChannel}</span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Channel reachability:</span>
-                  <span className="font-semibold text-foreground">{detail.outreach.phoneReach}% Voice · {detail.outreach.smsReach}% SMS</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Channel reachability:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.outreach.phoneReach}% Voice · {detail.outreach.smsReach}% SMS
+                  </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Best response window:</span>
-                  <span className="font-semibold text-foreground">{detail.outreach.bestWindow}</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Best response window:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {detail.outreach.bestWindow}
+                  </span>
                 </div>
               </div>
             </div>
             <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span className="font-bold text-primary">{customer.contact} reachability</span> · Window {detail.outreach.bestWindow}
+              <span className="font-bold text-primary">{customer.contact} reachability</span> ·
+              Window {detail.outreach.bestWindow}
             </div>
           </GlassCard>
 
@@ -278,47 +367,92 @@ function CustomerProfile() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-destructive">
                   <ShieldAlert className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">3. Risk Trajectory</h3>
+                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
+                    3. Risk Trajectory
+                  </h3>
                 </div>
                 <Status tone={customer.dpd > 30 ? "danger" : customer.dpd > 15 ? "warn" : "good"}>
-                  {customer.dpd > 30 ? "Deteriorating" : customer.dpd > 15 ? "Monitoring" : "Controlled"}
+                  {customer.dpd > 30
+                    ? "Deteriorating"
+                    : customer.dpd > 15
+                      ? "Monitoring"
+                      : "Controlled"}
                 </Status>
               </div>
               <div className="mt-3.5 space-y-2.5 text-xs">
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">30-day progression:</span>
-                  <span className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    30-day progression:
+                  </span>
+                  <span
+                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
                     {detail.riskTrajectory.dpdChange}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">15-day velocity:</span>
-                  <span className={`font-semibold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    15-day velocity:
+                  </span>
+                  <span
+                    className={`font-semibold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
                     {detail.riskTrajectory.dpd15Change ?? detail.riskTrajectory.dpdChange}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Exposure ratio:</span>
-                  <span className="font-semibold text-foreground">{detail.riskTrajectory.exposureRatio}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Delinquency bucket:</span>
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Exposure ratio:
+                  </span>
                   <span className="font-semibold text-foreground">
-                    {customer.dpd <= 30 ? "1–30 DPD (Early stage)" : customer.dpd <= 60 ? "31–60 DPD (Mid stage)" : "60+ DPD (Late stage)"}
+                    {detail.riskTrajectory.exposureRatio}
                   </span>
                 </div>
                 <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">Severity tier:</span>
-                  <span className={`font-bold ${customer.risk === "High" ? "text-destructive" : customer.risk === "Medium" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
-                    {detail.riskTrajectory.severityTier ?? (customer.risk === "High" ? "Elevated Default Risk" : customer.risk === "Medium" ? "Moderate Risk Exposure" : "Low Delinquency Tier")}
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Delinquency bucket:
+                  </span>
+                  <span className="font-semibold text-foreground">
+                    {customer.dpd <= 30
+                      ? "1–30 DPD (Early stage)"
+                      : customer.dpd <= 60
+                        ? "31–60 DPD (Mid stage)"
+                        : "60+ DPD (Late stage)"}
+                  </span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-600 dark:text-slate-300 font-medium">
+                    Severity tier:
+                  </span>
+                  <span
+                    className={`font-bold ${customer.risk === "High" ? "text-destructive" : customer.risk === "Medium" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+                  >
+                    {detail.riskTrajectory.severityTier ??
+                      (customer.risk === "High"
+                        ? "Elevated Default Risk"
+                        : customer.risk === "Medium"
+                          ? "Moderate Risk Exposure"
+                          : "Low Delinquency Tier")}
                   </span>
                 </div>
               </div>
             </div>
             <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}>
-                {customer.dpd > 30 ? "Late-stage hardening" : customer.dpd > 15 ? "Pre-30 day window" : "Early-stage window"}
-              </span> · {customer.dpd > 30 ? "Immediate supervisor action required" : customer.dpd > 15 ? "Proactive reminder recommended" : "High self-cure probability"}
+              <span
+                className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
+              >
+                {customer.dpd > 30
+                  ? "Late-stage hardening"
+                  : customer.dpd > 15
+                    ? "Pre-30 day window"
+                    : "Early-stage window"}
+              </span>{" "}
+              ·{" "}
+              {customer.dpd > 30
+                ? "Immediate supervisor action required"
+                : customer.dpd > 15
+                  ? "Proactive reminder recommended"
+                  : "High self-cure probability"}
             </div>
           </GlassCard>
         </div>
@@ -331,15 +465,19 @@ function CustomerProfile() {
               <div className="flex items-center justify-between">
                 <div>
                   <h3 className="font-bold text-display">DPD Progression Trajectory</h3>
-                  <p className="text-xs text-muted-foreground">Historical 30-day delinquency progression matching account records</p>
+                  <p className="text-xs text-muted-foreground">
+                    Historical 30-day delinquency progression matching account records
+                  </p>
                 </div>
-                <div className={`flex items-center gap-1 text-xs font-bold ${
-                  detail.riskTrajectory.direction === "Improving"
-                    ? "text-emerald-600 dark:text-emerald-400"
-                    : detail.riskTrajectory.direction === "Deteriorating"
-                    ? "text-destructive"
-                    : "text-warning-foreground"
-                }`}>
+                <div
+                  className={`flex items-center gap-1 text-xs font-bold ${
+                    detail.riskTrajectory.direction === "Improving"
+                      ? "text-emerald-600 dark:text-emerald-400"
+                      : detail.riskTrajectory.direction === "Deteriorating"
+                        ? "text-destructive"
+                        : "text-warning-foreground"
+                  }`}
+                >
                   {detail.riskTrajectory.direction === "Improving" ? (
                     <TrendingDown className="size-4" />
                   ) : detail.riskTrajectory.direction === "Deteriorating" ? (
@@ -353,12 +491,30 @@ function CustomerProfile() {
 
               <div className="mt-4 h-48 w-full">
                 <ResponsiveContainer width="100%" height="100%">
-                  <LineChart data={detail.dpdHistory} margin={{ top: 18, right: 30, left: -20, bottom: 0 }}>
-                    <XAxis dataKey="period" tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }} axisLine={false} tickLine={false} />
-                    <YAxis domain={[0, Math.max(10, customer.dpd + 8)]} tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }} axisLine={false} tickLine={false} />
+                  <LineChart
+                    data={detail.dpdHistory}
+                    margin={{ top: 18, right: 30, left: -20, bottom: 0 }}
+                  >
+                    <XAxis
+                      dataKey="period"
+                      tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <YAxis
+                      domain={[0, Math.max(10, customer.dpd + 8)]}
+                      tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
+                      axisLine={false}
+                      tickLine={false}
+                    />
                     <RechartsTooltip
-                      contentStyle={{ backgroundColor: "var(--color-card, #fff)", borderColor: "var(--color-border, #ccc)", borderRadius: "8px", fontSize: "12px" }}
-                      formatter={(val: any) => [`${val} DPD`, "Delinquency"]}
+                      contentStyle={{
+                        backgroundColor: "var(--color-card, #fff)",
+                        borderColor: "var(--color-border, #ccc)",
+                        borderRadius: "8px",
+                        fontSize: "12px",
+                      }}
+                      formatter={(val: number) => [`${val} DPD`, "Delinquency"]}
                     />
                     <Line
                       type="monotone"
@@ -368,8 +524,8 @@ function CustomerProfile() {
                         detail.riskTrajectory.direction === "Improving"
                           ? "#10b981"
                           : detail.riskTrajectory.direction === "Deteriorating"
-                          ? "var(--color-destructive, #ef4444)"
-                          : "var(--color-warning-foreground, #f59e0b)"
+                            ? "var(--color-destructive, #ef4444)"
+                            : "var(--color-warning-foreground, #f59e0b)"
                       }
                       strokeWidth={3}
                       dot={{
@@ -378,8 +534,8 @@ function CustomerProfile() {
                           detail.riskTrajectory.direction === "Improving"
                             ? "#10b981"
                             : detail.riskTrajectory.direction === "Deteriorating"
-                            ? "var(--color-destructive, #ef4444)"
-                            : "var(--color-warning-foreground, #f59e0b)",
+                              ? "var(--color-destructive, #ef4444)"
+                              : "var(--color-warning-foreground, #f59e0b)",
                       }}
                     />
                   </LineChart>
@@ -390,8 +546,8 @@ function CustomerProfile() {
               {detail.riskTrajectory.direction === "Improving"
                 ? `Account curing: DPD decreased from ${detail.dpdHistory[0]?.dpd} to ${customer.dpd} DPD (${detail.riskTrajectory.dpdChange}) · Positive repayment cadence`
                 : customer.dpd <= 10
-                ? `Account is in early-stage delinquency (${customer.dpd} DPD) · Frontline contact window active`
-                : `DPD moved from ${detail.dpdHistory[0]?.dpd} to ${customer.dpd} DPD (${detail.riskTrajectory.dpdChange}) · Intervention window active`}
+                  ? `Account is in early-stage delinquency (${customer.dpd} DPD) · Frontline contact window active`
+                  : `DPD moved from ${detail.dpdHistory[0]?.dpd} to ${customer.dpd} DPD (${detail.riskTrajectory.dpdChange}) · Intervention window active`}
             </div>
           </GlassCard>
 
@@ -401,13 +557,17 @@ function CustomerProfile() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2 text-primary">
                   <Sparkles className="size-4" />
-                  <h3 className="font-bold text-display text-foreground">Customer Resolution Insights</h3>
+                  <h3 className="font-bold text-display text-foreground">
+                    Customer Resolution Insights
+                  </h3>
                 </div>
                 <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold text-primary">
                   Actionable Intelligence
                 </span>
               </div>
-              <p className="mt-1 text-xs text-muted-foreground">Actionable justification, delinquency drivers & behavioral patterns</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Actionable justification, delinquency drivers & behavioral patterns
+              </p>
 
               <ul className="mt-4 space-y-2.5 text-xs leading-relaxed">
                 {detail.priorityJustification.map((reason, i) => (
@@ -420,7 +580,9 @@ function CustomerProfile() {
             </div>
 
             <div className="mt-4 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/10 p-3 text-xs">
-              <span className="font-semibold text-primary">High operational urgency · Immediate recovery ROI</span>
+              <span className="font-semibold text-primary">
+                High operational urgency · Immediate recovery ROI
+              </span>
               <span className="text-[11px] text-muted-foreground">Priority Score: High</span>
             </div>
           </GlassCard>
@@ -483,15 +645,21 @@ function CustomerProfile() {
                 <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-2 text-xs">
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>Delinquency Exposure:</span>
-                    <span className="font-bold text-destructive">{customer.dpd} DPD ({customer.amount})</span>
+                    <span className="font-bold text-destructive">
+                      {customer.dpd} DPD ({customer.amount})
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>Target Outcome:</span>
-                    <span className="font-semibold text-foreground">Immediate Settlement / PTP</span>
+                    <span className="font-semibold text-foreground">
+                      Immediate Settlement / PTP
+                    </span>
                   </div>
                   <div className="flex justify-between items-center text-muted-foreground">
                     <span>Contact Channel:</span>
-                    <span className="font-semibold text-primary">{detail.outreach.preferredChannel}</span>
+                    <span className="font-semibold text-primary">
+                      {detail.outreach.preferredChannel}
+                    </span>
                   </div>
                 </div>
               </div>
@@ -506,13 +674,16 @@ function CustomerProfile() {
                   <p className="font-semibold text-foreground">{detail.nba.approach}</p>
                   <ul className="mt-2 space-y-1.5 text-[11px] text-muted-foreground border-t border-primary/10 pt-2">
                     <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">1.</span> Verify identity and confirm recent cash flow status.
+                      <span className="text-primary font-bold">1.</span> Verify identity and confirm
+                      recent cash flow status.
                     </li>
                     <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">2.</span> Propose structured cure or partial payment plan today.
+                      <span className="text-primary font-bold">2.</span> Propose structured cure or
+                      partial payment plan today.
                     </li>
                     <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">3.</span> Re-confirm commitment date before closing contact.
+                      <span className="text-primary font-bold">3.</span> Re-confirm commitment date
+                      before closing contact.
                     </li>
                   </ul>
                 </div>
@@ -562,7 +733,9 @@ function CustomerProfile() {
                       : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30"
                   }`}
                 >
-                  <span className={`size-2 rounded-full ${humanApproved ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`} />
+                  <span
+                    className={`size-2 rounded-full ${humanApproved ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`}
+                  />
                   {humanApproved ? "Approved ✓" : "Review Required ?"}
                 </span>
               </div>
@@ -615,7 +788,9 @@ function CustomerProfile() {
           <aside className="glass-strong absolute inset-y-0 right-0 w-full max-w-md overflow-y-auto border-l p-6 shadow-2xl">
             <div className="flex items-center justify-between border-b pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-primary">Outcome Capture</p>
+                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-primary">
+                  Outcome Capture
+                </p>
                 <h3 className="text-xl font-bold text-display">Record Call Outcome</h3>
               </div>
               <Button variant="ghost" className="size-8 p-0" onClick={() => setDrawerOpen(false)}>
@@ -627,12 +802,16 @@ function CustomerProfile() {
               {/* Customer context pill */}
               <div className="rounded-lg border bg-muted/40 p-3 text-xs">
                 <span className="font-bold text-foreground">{customer.name}</span> ({customer.id}) •{" "}
-                <span className="text-muted-foreground">{customer.amount} balance · {customer.dpd} DPD</span>
+                <span className="text-muted-foreground">
+                  {customer.amount} balance · {customer.dpd} DPD
+                </span>
               </div>
 
               {/* Action Taken */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Action Executed</label>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  Action Executed
+                </label>
                 <div className="rounded-lg border bg-card p-2.5 text-xs font-semibold flex items-center gap-2">
                   <Phone className="size-3.5 text-primary" /> Phone Call to Customer
                 </div>
@@ -640,7 +819,9 @@ function CustomerProfile() {
 
               {/* Disposition Selection */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1.5">Call Disposition</label>
+                <label className="block text-xs font-bold text-muted-foreground mb-1.5">
+                  Call Disposition
+                </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
                     "Connected",
@@ -703,7 +884,9 @@ function CustomerProfile() {
 
               {/* Agent Notes */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">Collector Notes</label>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">
+                  Collector Notes
+                </label>
                 <textarea
                   value={notesInput}
                   onChange={(e) => setNotesInput(e.target.value)}
@@ -718,7 +901,11 @@ function CustomerProfile() {
                 <Button className="w-full h-10 font-bold" onClick={handleSaveOutcome}>
                   <Check className="size-4" /> Save Outcome to Timeline
                 </Button>
-                <Button variant="secondary" className="w-full text-xs" onClick={() => setDrawerOpen(false)}>
+                <Button
+                  variant="secondary"
+                  className="w-full text-xs"
+                  onClick={() => setDrawerOpen(false)}
+                >
                   Cancel
                 </Button>
               </div>

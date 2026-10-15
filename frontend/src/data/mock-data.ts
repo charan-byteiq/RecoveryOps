@@ -19,12 +19,108 @@ export interface MockBranch {
 /* ─────────────── Branch Network (US Regional Network) ─────────────── */
 
 export const branches: MockBranch[] = [
-  { id: "TPA", name: "Tampa Branch", region: "Southeast", state: "FL", accounts: 12480, collectionRate: 71, recovered: "$4.8M", cureRate: 58, contactRate: 61, ptpKept: 47, avgDaysToResolve: 27, collectionsPerAgent: "$18.4K", escalationRate: 14, firstContact: "Day 5", outreachPath: "SMS → Phone" },
-  { id: "DAL", name: "Dallas Branch", region: "South Central", state: "TX", accounts: 9840, collectionRate: 84, recovered: "$6.2M", cureRate: 71, contactRate: 79, ptpKept: 68, avgDaysToResolve: 21, collectionsPerAgent: "$22.1K", escalationRate: 9, firstContact: "Day 2", outreachPath: "SMS → Phone → Field" },
-  { id: "ATL", name: "Atlanta Branch", region: "Southeast", state: "GA", accounts: 7620, collectionRate: 82, recovered: "$4.1M", cureRate: 69, contactRate: 76, ptpKept: 65, avgDaysToResolve: 22, collectionsPerAgent: "$20.8K", escalationRate: 11, firstContact: "Day 2", outreachPath: "Phone → SMS → Field" },
-  { id: "PHX", name: "Phoenix Branch", region: "Southwest", state: "AZ", accounts: 6350, collectionRate: 80, recovered: "$3.4M", cureRate: 65, contactRate: 73, ptpKept: 62, avgDaysToResolve: 23, collectionsPerAgent: "$19.6K", escalationRate: 12, firstContact: "Day 3", outreachPath: "SMS → Phone → Field" },
-  { id: "CLT", name: "Charlotte Branch", region: "Southeast", state: "NC", accounts: 5210, collectionRate: 78, recovered: "$2.7M", cureRate: 62, contactRate: 70, ptpKept: 58, avgDaysToResolve: 25, collectionsPerAgent: "$17.2K", escalationRate: 15, firstContact: "Day 4", outreachPath: "SMS → Phone" },
-  { id: "CHI", name: "Chicago Branch", region: "Midwest", state: "IL", accounts: 4890, collectionRate: 76, recovered: "$2.3M", cureRate: 60, contactRate: 67, ptpKept: 54, avgDaysToResolve: 26, collectionsPerAgent: "$16.8K", escalationRate: 16, firstContact: "Day 4", outreachPath: "SMS → Phone" },
+  {
+    id: "TPA",
+    name: "Tampa Branch",
+    region: "Southeast",
+    state: "FL",
+    accounts: 12480,
+    collectionRate: 71,
+    recovered: "$4.8M",
+    cureRate: 58,
+    contactRate: 61,
+    ptpKept: 47,
+    avgDaysToResolve: 27,
+    collectionsPerAgent: "$18.4K",
+    escalationRate: 14,
+    firstContact: "Day 5",
+    outreachPath: "SMS → Phone",
+  },
+  {
+    id: "DAL",
+    name: "Dallas Branch",
+    region: "South Central",
+    state: "TX",
+    accounts: 9840,
+    collectionRate: 84,
+    recovered: "$6.2M",
+    cureRate: 71,
+    contactRate: 79,
+    ptpKept: 68,
+    avgDaysToResolve: 21,
+    collectionsPerAgent: "$22.1K",
+    escalationRate: 9,
+    firstContact: "Day 2",
+    outreachPath: "SMS → Phone → Field",
+  },
+  {
+    id: "ATL",
+    name: "Atlanta Branch",
+    region: "Southeast",
+    state: "GA",
+    accounts: 7620,
+    collectionRate: 82,
+    recovered: "$4.1M",
+    cureRate: 69,
+    contactRate: 76,
+    ptpKept: 65,
+    avgDaysToResolve: 22,
+    collectionsPerAgent: "$20.8K",
+    escalationRate: 11,
+    firstContact: "Day 2",
+    outreachPath: "Phone → SMS → Field",
+  },
+  {
+    id: "PHX",
+    name: "Phoenix Branch",
+    region: "Southwest",
+    state: "AZ",
+    accounts: 6350,
+    collectionRate: 80,
+    recovered: "$3.4M",
+    cureRate: 65,
+    contactRate: 73,
+    ptpKept: 62,
+    avgDaysToResolve: 23,
+    collectionsPerAgent: "$19.6K",
+    escalationRate: 12,
+    firstContact: "Day 3",
+    outreachPath: "SMS → Phone → Field",
+  },
+  {
+    id: "CLT",
+    name: "Charlotte Branch",
+    region: "Southeast",
+    state: "NC",
+    accounts: 5210,
+    collectionRate: 78,
+    recovered: "$2.7M",
+    cureRate: 62,
+    contactRate: 70,
+    ptpKept: 58,
+    avgDaysToResolve: 25,
+    collectionsPerAgent: "$17.2K",
+    escalationRate: 15,
+    firstContact: "Day 4",
+    outreachPath: "SMS → Phone",
+  },
+  {
+    id: "CHI",
+    name: "Chicago Branch",
+    region: "Midwest",
+    state: "IL",
+    accounts: 4890,
+    collectionRate: 76,
+    recovered: "$2.3M",
+    cureRate: 60,
+    contactRate: 67,
+    ptpKept: 54,
+    avgDaysToResolve: 26,
+    collectionsPerAgent: "$16.8K",
+    escalationRate: 16,
+    firstContact: "Day 4",
+    outreachPath: "SMS → Phone",
+  },
 ];
 
 /* ─────────────── Network Aggregate Helpers ─────────────── */
@@ -32,12 +128,16 @@ export const branches: MockBranch[] = [
 export const networkTotals = {
   totalBranches: branches.length,
   totalAccounts: branches.reduce((s, b) => s + b.accounts, 0),
-  avgCollectionRate: Math.round(branches.reduce((s, b) => s + b.collectionRate, 0) / branches.length),
+  avgCollectionRate: Math.round(
+    branches.reduce((s, b) => s + b.collectionRate, 0) / branches.length,
+  ),
   totalRecovered: "$23.5M",
   avgCureRate: Math.round(branches.reduce((s, b) => s + b.cureRate, 0) / branches.length),
   avgContactRate: Math.round(branches.reduce((s, b) => s + b.contactRate, 0) / branches.length),
   avgPtpKept: Math.round(branches.reduce((s, b) => s + b.ptpKept, 0) / branches.length),
-  avgEscalationRate: Math.round(branches.reduce((s, b) => s + b.escalationRate, 0) / branches.length),
+  avgEscalationRate: Math.round(
+    branches.reduce((s, b) => s + b.escalationRate, 0) / branches.length,
+  ),
 };
 
 /* ─────────────── Per-Branch Metrics (for KPI cards) ─────────────── */
@@ -46,10 +146,30 @@ export function getBranchMetrics(branchId: string) {
   const b = branches.find((x) => x.id === branchId);
   if (!b) return branchMetricsTampa;
   return [
-    { label: "Amount recovered", value: b.recovered, note: `Target ${b.id === "TPA" ? "$5.6M" : b.id === "DAL" ? "$6.8M" : b.id === "ATL" ? "$4.5M" : b.id === "PHX" ? "$3.8M" : b.id === "CLT" ? "$3.1M" : "$2.8M"}`, tone: "good" as const },
-    { label: "Cure rate", value: `${b.cureRate}%`, note: `Peer ${networkTotals.avgCureRate}%`, tone: b.cureRate >= networkTotals.avgCureRate ? "good" as const : "danger" as const },
-    { label: "Avg. days to resolve", value: `${b.avgDaysToResolve}d`, note: `Peer 22d`, tone: b.avgDaysToResolve <= 22 ? "good" as const : "danger" as const },
-    { label: "Contact rate", value: `${b.contactRate}%`, note: `Peer ${networkTotals.avgContactRate}%`, tone: b.contactRate >= networkTotals.avgContactRate ? "good" as const : "danger" as const },
+    {
+      label: "Amount recovered",
+      value: b.recovered,
+      note: `Target ${b.id === "TPA" ? "$5.6M" : b.id === "DAL" ? "$6.8M" : b.id === "ATL" ? "$4.5M" : b.id === "PHX" ? "$3.8M" : b.id === "CLT" ? "$3.1M" : "$2.8M"}`,
+      tone: "good" as const,
+    },
+    {
+      label: "Cure rate",
+      value: `${b.cureRate}%`,
+      note: `Peer ${networkTotals.avgCureRate}%`,
+      tone: b.cureRate >= networkTotals.avgCureRate ? ("good" as const) : ("danger" as const),
+    },
+    {
+      label: "Avg. days to resolve",
+      value: `${b.avgDaysToResolve}d`,
+      note: `Peer 22d`,
+      tone: b.avgDaysToResolve <= 22 ? ("good" as const) : ("danger" as const),
+    },
+    {
+      label: "Contact rate",
+      value: `${b.contactRate}%`,
+      note: `Peer ${networkTotals.avgContactRate}%`,
+      tone: b.contactRate >= networkTotals.avgContactRate ? ("good" as const) : ("danger" as const),
+    },
   ];
 }
 
@@ -65,33 +185,68 @@ export const branchMetrics = branchMetricsTampa;
 
 /* ─────────────── Per-Branch Drivers (for root cause) ─────────────── */
 
-export type Driver = { name: string; branch: number; peer: number; delta: string; impact: string; tone: "danger" | "warn" | "good"; detail: string };
+export type Driver = {
+  name: string;
+  branch: number;
+  peer: number;
+  delta: string;
+  impact: string;
+  tone: "danger" | "warn" | "good";
+  detail: string;
+};
 
 export function getBranchDrivers(branchId: string): Driver[] {
   const b = branches.find((x) => x.id === branchId) ?? branches[0]!;
   const contactPeer = networkTotals.avgContactRate;
   const contactDelta = b.contactRate - contactPeer;
-  
+
   const ptpPeer = networkTotals.avgPtpKept;
   const ptpDelta = b.ptpKept - ptpPeer;
-  
+
   const branchDPD = getBranchDPD(b.id);
-  const branch30Plus = branchDPD.filter(d => d[0] !== "Current" && d[0] !== "1–30").reduce((s, d) => s + (d[1] as number), 0);
-  
-  const allBranches30Plus = branches.map(br => getBranchDPD(br.id).filter(d => d[0] !== "Current" && d[0] !== "1–30").reduce((s, d) => s + (d[1] as number), 0));
+  const branch30Plus = branchDPD
+    .filter((d) => d[0] !== "Current" && d[0] !== "1–30")
+    .reduce((s, d) => s + (d[1] as number), 0);
+
+  const allBranches30Plus = branches.map((br) =>
+    getBranchDPD(br.id)
+      .filter((d) => d[0] !== "Current" && d[0] !== "1–30")
+      .reduce((s, d) => s + (d[1] as number), 0),
+  );
   const peer30Plus = Math.round(allBranches30Plus.reduce((s, v) => s + v, 0) / branches.length);
   const dpdDelta = branch30Plus - peer30Plus;
 
-  let contactImpact = 0, ptpImpact = 0, dpdImpact = 0;
-  if (b.id === "TPA") { contactImpact = -4; ptpImpact = -2; dpdImpact = -1; }
-  else if (b.id === "DAL") { contactImpact = 3; ptpImpact = 2; dpdImpact = 1; }
-  else if (b.id === "ATL") { contactImpact = 2; ptpImpact = 1; dpdImpact = 1; }
-  else if (b.id === "PHX") { contactImpact = 1; ptpImpact = 0; dpdImpact = 0; }
-  else if (b.id === "CLT") { contactImpact = -1; ptpImpact = -1; dpdImpact = 0; }
-  else if (b.id === "CHI") { contactImpact = -2; ptpImpact = -1; dpdImpact = -1; }
-  
-  const formatDelta = (val: number) => val >= 0 ? `+${val} pts` : `−${Math.abs(val)} pts`;
-  
+  let contactImpact = 0,
+    ptpImpact = 0,
+    dpdImpact = 0;
+  if (b.id === "TPA") {
+    contactImpact = -4;
+    ptpImpact = -2;
+    dpdImpact = -1;
+  } else if (b.id === "DAL") {
+    contactImpact = 3;
+    ptpImpact = 2;
+    dpdImpact = 1;
+  } else if (b.id === "ATL") {
+    contactImpact = 2;
+    ptpImpact = 1;
+    dpdImpact = 1;
+  } else if (b.id === "PHX") {
+    contactImpact = 1;
+    ptpImpact = 0;
+    dpdImpact = 0;
+  } else if (b.id === "CLT") {
+    contactImpact = -1;
+    ptpImpact = -1;
+    dpdImpact = 0;
+  } else if (b.id === "CHI") {
+    contactImpact = -2;
+    ptpImpact = -1;
+    dpdImpact = -1;
+  }
+
+  const formatDelta = (val: number) => (val >= 0 ? `+${val} pts` : `−${Math.abs(val)} pts`);
+
   return [
     {
       name: "Contact rate",
@@ -100,7 +255,10 @@ export function getBranchDrivers(branchId: string): Driver[] {
       delta: formatDelta(contactDelta),
       impact: formatDelta(contactImpact),
       tone: contactDelta >= 0 ? "good" : "danger",
-      detail: contactDelta >= 0 ? "Strong first contact drives early borrower engagement." : "Delayed first contact reduces early delinquency resolution."
+      detail:
+        contactDelta >= 0
+          ? "Strong first contact drives early borrower engagement."
+          : "Delayed first contact reduces early delinquency resolution.",
     },
     {
       name: "PTP kept",
@@ -109,7 +267,10 @@ export function getBranchDrivers(branchId: string): Driver[] {
       delta: formatDelta(ptpDelta),
       impact: formatDelta(ptpImpact),
       tone: ptpDelta >= 0 ? "good" : "danger",
-      detail: ptpDelta >= 0 ? "Consistent follow-up maintains above-average promise fulfillment." : "Broken promises concentrated among accounts with delayed follow-up."
+      detail:
+        ptpDelta >= 0
+          ? "Consistent follow-up maintains above-average promise fulfillment."
+          : "Broken promises concentrated among accounts with delayed follow-up.",
     },
     {
       name: "30+ DPD concentration",
@@ -118,8 +279,11 @@ export function getBranchDrivers(branchId: string): Driver[] {
       delta: formatDelta(dpdDelta),
       impact: formatDelta(dpdImpact),
       tone: dpdDelta <= 0 ? "good" : "danger",
-      detail: dpdDelta <= 0 ? "Early intervention prevents accounts from rolling forward." : "Accounts are rolling into later buckets before effective contact."
-    }
+      detail:
+        dpdDelta <= 0
+          ? "Early intervention prevents accounts from rolling forward."
+          : "Accounts are rolling into later buckets before effective contact.",
+    },
   ];
 }
 
@@ -144,10 +308,46 @@ export function getPeerData(anchorBranchId: string) {
 }
 
 export const peers = [
-  { name: "Tampa Branch", rate: 71, contact: 61, ptp: 47, cure: 58, first: "Day 5", path: "SMS → Phone", isAnchor: true },
-  { name: "Dallas Branch", rate: 84, contact: 79, ptp: 68, cure: 71, first: "Day 2", path: "SMS → Phone → Field", isAnchor: false },
-  { name: "Atlanta Branch", rate: 82, contact: 76, ptp: 65, cure: 69, first: "Day 2", path: "Phone → SMS → Field", isAnchor: false },
-  { name: "Phoenix Branch", rate: 80, contact: 73, ptp: 62, cure: 65, first: "Day 3", path: "SMS → Phone → Field", isAnchor: false },
+  {
+    name: "Tampa Branch",
+    rate: 71,
+    contact: 61,
+    ptp: 47,
+    cure: 58,
+    first: "Day 5",
+    path: "SMS → Phone",
+    isAnchor: true,
+  },
+  {
+    name: "Dallas Branch",
+    rate: 84,
+    contact: 79,
+    ptp: 68,
+    cure: 71,
+    first: "Day 2",
+    path: "SMS → Phone → Field",
+    isAnchor: false,
+  },
+  {
+    name: "Atlanta Branch",
+    rate: 82,
+    contact: 76,
+    ptp: 65,
+    cure: 69,
+    first: "Day 2",
+    path: "Phone → SMS → Field",
+    isAnchor: false,
+  },
+  {
+    name: "Phoenix Branch",
+    rate: 80,
+    contact: 73,
+    ptp: 62,
+    cure: 65,
+    first: "Day 3",
+    path: "SMS → Phone → Field",
+    isAnchor: false,
+  },
 ];
 
 /* ─────────────── Per-Branch Performance Trend ─────────────── */
@@ -156,12 +356,54 @@ type TrendPoint = { m: string; a: number; p: number };
 
 export function getBranchPerformanceTrend(branchId: string): TrendPoint[] {
   const map: Record<string, TrendPoint[]> = {
-    TPA: [{ m: "Apr", a: 74, p: 80 }, { m: "May", a: 73, p: 81 }, { m: "Jun", a: 72, p: 81 }, { m: "Jul", a: 73, p: 82 }, { m: "Aug", a: 70, p: 82 }, { m: "Sep", a: 71, p: 82 }],
-    DAL: [{ m: "Apr", a: 81, p: 80 }, { m: "May", a: 82, p: 81 }, { m: "Jun", a: 83, p: 81 }, { m: "Jul", a: 83, p: 82 }, { m: "Aug", a: 84, p: 82 }, { m: "Sep", a: 84, p: 82 }],
-    ATL: [{ m: "Apr", a: 79, p: 80 }, { m: "May", a: 80, p: 81 }, { m: "Jun", a: 81, p: 81 }, { m: "Jul", a: 81, p: 82 }, { m: "Aug", a: 82, p: 82 }, { m: "Sep", a: 82, p: 82 }],
-    PHX: [{ m: "Apr", a: 77, p: 80 }, { m: "May", a: 78, p: 81 }, { m: "Jun", a: 78, p: 81 }, { m: "Jul", a: 79, p: 82 }, { m: "Aug", a: 79, p: 82 }, { m: "Sep", a: 79, p: 82 }],
-    CLT: [{ m: "Apr", a: 75, p: 80 }, { m: "May", a: 75, p: 81 }, { m: "Jun", a: 76, p: 81 }, { m: "Jul", a: 76, p: 82 }, { m: "Aug", a: 76, p: 82 }, { m: "Sep", a: 76, p: 82 }],
-    CHI: [{ m: "Apr", a: 73, p: 80 }, { m: "May", a: 73, p: 81 }, { m: "Jun", a: 74, p: 81 }, { m: "Jul", a: 74, p: 82 }, { m: "Aug", a: 74, p: 82 }, { m: "Sep", a: 74, p: 82 }],
+    TPA: [
+      { m: "Apr", a: 74, p: 80 },
+      { m: "May", a: 73, p: 81 },
+      { m: "Jun", a: 72, p: 81 },
+      { m: "Jul", a: 73, p: 82 },
+      { m: "Aug", a: 70, p: 82 },
+      { m: "Sep", a: 71, p: 82 },
+    ],
+    DAL: [
+      { m: "Apr", a: 81, p: 80 },
+      { m: "May", a: 82, p: 81 },
+      { m: "Jun", a: 83, p: 81 },
+      { m: "Jul", a: 83, p: 82 },
+      { m: "Aug", a: 84, p: 82 },
+      { m: "Sep", a: 84, p: 82 },
+    ],
+    ATL: [
+      { m: "Apr", a: 79, p: 80 },
+      { m: "May", a: 80, p: 81 },
+      { m: "Jun", a: 81, p: 81 },
+      { m: "Jul", a: 81, p: 82 },
+      { m: "Aug", a: 82, p: 82 },
+      { m: "Sep", a: 82, p: 82 },
+    ],
+    PHX: [
+      { m: "Apr", a: 77, p: 80 },
+      { m: "May", a: 78, p: 81 },
+      { m: "Jun", a: 78, p: 81 },
+      { m: "Jul", a: 79, p: 82 },
+      { m: "Aug", a: 79, p: 82 },
+      { m: "Sep", a: 79, p: 82 },
+    ],
+    CLT: [
+      { m: "Apr", a: 75, p: 80 },
+      { m: "May", a: 75, p: 81 },
+      { m: "Jun", a: 76, p: 81 },
+      { m: "Jul", a: 76, p: 82 },
+      { m: "Aug", a: 76, p: 82 },
+      { m: "Sep", a: 76, p: 82 },
+    ],
+    CHI: [
+      { m: "Apr", a: 73, p: 80 },
+      { m: "May", a: 73, p: 81 },
+      { m: "Jun", a: 74, p: 81 },
+      { m: "Jul", a: 74, p: 82 },
+      { m: "Aug", a: 74, p: 82 },
+      { m: "Sep", a: 74, p: 82 },
+    ],
   };
   return map[branchId] ?? map["TPA"]!;
 }
@@ -172,12 +414,48 @@ type DPDEntry = [string, number, string];
 
 export function getBranchDPD(branchId: string): DPDEntry[] {
   const map: Record<string, DPDEntry[]> = {
-    TPA: [["Current", 34, "success"], ["1–30", 28, "primary"], ["31–60", 19, "warn"], ["61–90", 11, "danger"], ["90+", 8, "danger"]],
-    DAL: [["Current", 42, "success"], ["1–30", 26, "primary"], ["31–60", 16, "warn"], ["61–90", 10, "danger"], ["90+", 6, "danger"]],
-    ATL: [["Current", 40, "success"], ["1–30", 27, "primary"], ["31–60", 16, "warn"], ["61–90", 10, "danger"], ["90+", 7, "danger"]],
-    PHX: [["Current", 38, "success"], ["1–30", 28, "primary"], ["31–60", 17, "warn"], ["61–90", 10, "danger"], ["90+", 7, "danger"]],
-    CLT: [["Current", 36, "success"], ["1–30", 28, "primary"], ["31–60", 18, "warn"], ["61–90", 11, "danger"], ["90+", 7, "danger"]],
-    CHI: [["Current", 35, "success"], ["1–30", 27, "primary"], ["31–60", 19, "warn"], ["61–90", 12, "danger"], ["90+", 7, "danger"]],
+    TPA: [
+      ["Current", 34, "success"],
+      ["1–30", 28, "primary"],
+      ["31–60", 19, "warn"],
+      ["61–90", 11, "danger"],
+      ["90+", 8, "danger"],
+    ],
+    DAL: [
+      ["Current", 42, "success"],
+      ["1–30", 26, "primary"],
+      ["31–60", 16, "warn"],
+      ["61–90", 10, "danger"],
+      ["90+", 6, "danger"],
+    ],
+    ATL: [
+      ["Current", 40, "success"],
+      ["1–30", 27, "primary"],
+      ["31–60", 16, "warn"],
+      ["61–90", 10, "danger"],
+      ["90+", 7, "danger"],
+    ],
+    PHX: [
+      ["Current", 38, "success"],
+      ["1–30", 28, "primary"],
+      ["31–60", 17, "warn"],
+      ["61–90", 10, "danger"],
+      ["90+", 7, "danger"],
+    ],
+    CLT: [
+      ["Current", 36, "success"],
+      ["1–30", 28, "primary"],
+      ["31–60", 18, "warn"],
+      ["61–90", 11, "danger"],
+      ["90+", 7, "danger"],
+    ],
+    CHI: [
+      ["Current", 35, "success"],
+      ["1–30", 27, "primary"],
+      ["31–60", 19, "warn"],
+      ["61–90", 12, "danger"],
+      ["90+", 7, "danger"],
+    ],
   };
   return map[branchId] ?? map["TPA"]!;
 }
@@ -186,36 +464,277 @@ export function getBranchDPD(branchId: string): DPDEntry[] {
 
 export function getBranchScorecard(branchId: string) {
   const b = branches.find((x) => x.id === branchId) ?? branches[0]!;
-  const peerAvg = { ptp: networkTotals.avgPtpKept, collections: 19.1, escalation: networkTotals.avgEscalationRate, contact: networkTotals.avgContactRate };
-  const agentVal = parseFloat(b.collectionsPerAgent.replace(/[\$K,]/g, ""));
+  const peerAvg = {
+    ptp: networkTotals.avgPtpKept,
+    collections: 19.1,
+    escalation: networkTotals.avgEscalationRate,
+    contact: networkTotals.avgContactRate,
+  };
+  const agentVal = parseFloat(b.collectionsPerAgent.replace(/[$K,]/g, ""));
   const diff = agentVal - peerAvg.collections;
   return [
-    ["PTP kept", `${b.ptpKept}%`, `${b.ptpKept >= peerAvg.ptp ? "+" : ""}${b.ptpKept - peerAvg.ptp} pts`],
+    [
+      "PTP kept",
+      `${b.ptpKept}%`,
+      `${b.ptpKept >= peerAvg.ptp ? "+" : ""}${b.ptpKept - peerAvg.ptp} pts`,
+    ],
     ["Collections / agent", b.collectionsPerAgent, `${diff >= 0 ? "+" : ""}$${diff.toFixed(1)}K`],
-    ["Escalation rate", `${b.escalationRate}%`, `${b.escalationRate <= peerAvg.escalation ? "" : "+"}${b.escalationRate - peerAvg.escalation} pts`],
-    ["Contact rate", `${b.contactRate}%`, `${b.contactRate >= peerAvg.contact ? "+" : ""}${b.contactRate - peerAvg.contact} pts`],
+    [
+      "Escalation rate",
+      `${b.escalationRate}%`,
+      `${b.escalationRate <= peerAvg.escalation ? "" : "+"}${b.escalationRate - peerAvg.escalation} pts`,
+    ],
+    [
+      "Contact rate",
+      `${b.contactRate}%`,
+      `${b.contactRate >= peerAvg.contact ? "+" : ""}${b.contactRate - peerAvg.contact} pts`,
+    ],
   ];
 }
 
 /* ─────────────── Customers (Synthetic US Collections Accounts) ─────────────── */
 
 export const customers = [
-  { id: "C001", name: "Michael Carter", account: "AL-10482", branch: "Branch 101", branchId: "101", dpd: 38, amount: "$24,500", risk: "High", contact: "High", ptp: "Broken", priority: "High", last: "Phone · 2d ago", action: "Call today" },
-  { id: "C002", name: "Jessica Williams", account: "RL-10931", branch: "Branch 101", branchId: "101", dpd: 31, amount: "$18,400", risk: "High", contact: "Medium", ptp: "None", priority: "High", last: "SMS · 4d ago", action: "Field review" },
-  { id: "C003", name: "David Johnson", account: "PL-20884", branch: "Branch 101", branchId: "101", dpd: 22, amount: "$12,500", risk: "Medium", contact: "High", ptp: "Due today", priority: "High", last: "Phone · yesterday", action: "PTP reminder" },
-  { id: "C004", name: "Emily Rodriguez", account: "RL-11203", branch: "Branch 104", branchId: "104", dpd: 64, amount: "$42,800", risk: "High", contact: "Low", ptp: "Broken", priority: "High", last: "No answer · 1d", action: "Field visit" },
-  { id: "C005", name: "Robert Miller", account: "PL-22401", branch: "Branch 101", branchId: "101", dpd: 16, amount: "$9,200", risk: "Medium", contact: "High", ptp: "Kept before", priority: "Medium", last: "SMS · today", action: "Wait 24h" },
-  { id: "C006", name: "Sarah Anderson", account: "AL-30552", branch: "Branch 101", branchId: "101", dpd: 45, amount: "$28,600", risk: "High", contact: "Medium", ptp: "None", priority: "Medium", last: "Email · 3d ago", action: "Phone call" },
-  { id: "C007", name: "James Wilson", account: "RL-11782", branch: "Branch 104", branchId: "104", dpd: 28, amount: "$19,500", risk: "Medium", contact: "High", ptp: "Kept before", priority: "Medium", last: "Phone · 1d", action: "PTP reminder" },
-  { id: "C008", name: "Amanda Thompson", account: "PL-21056", branch: "Branch 105", branchId: "105", dpd: 42, amount: "$31,400", risk: "High", contact: "Medium", ptp: "Broken", priority: "High", last: "SMS · 3d ago", action: "Call today" },
-  { id: "C009", name: "Christopher Martinez", account: "RL-12304", branch: "Branch 106", branchId: "106", dpd: 55, amount: "$36,000", risk: "High", contact: "Low", ptp: "None", priority: "High", last: "No answer · 2d", action: "Field visit" },
-  { id: "C010", name: "Ashley Taylor", account: "AL-30891", branch: "Branch 105", branchId: "105", dpd: 18, amount: "$8,450", risk: "Medium", contact: "High", ptp: "Due today", priority: "Medium", last: "Phone · today", action: "PTP reminder" },
-  { id: "C011", name: "Matthew Thomas", account: "RL-13102", branch: "Branch 201", branchId: "201", dpd: 71, amount: "$48,000", risk: "High", contact: "Low", ptp: "Broken", priority: "High", last: "No answer · 5d", action: "Field visit" },
-  { id: "C012", name: "Olivia Hernandez", account: "PL-22890", branch: "Branch 202", branchId: "202", dpd: 35, amount: "$14,200", risk: "High", contact: "Medium", ptp: "None", priority: "High", last: "SMS · 2d ago", action: "Call today" },
-  { id: "C013", name: "Daniel White", account: "RL-14001", branch: "Branch 106", branchId: "106", dpd: 12, amount: "$6,800", risk: "Low", contact: "High", ptp: "Kept before", priority: "Medium", last: "Phone · today", action: "Wait 24h" },
-  { id: "C014", name: "Megan Harris", account: "AL-31204", branch: "Branch 201", branchId: "201", dpd: 48, amount: "$22,900", risk: "High", contact: "Medium", ptp: "Broken", priority: "High", last: "Email · 4d ago", action: "Phone call" },
-  { id: "C015", name: "Brandon Clark", account: "RL-14520", branch: "Branch 202", branchId: "202", dpd: 25, amount: "$11,400", risk: "Medium", contact: "High", ptp: "Due today", priority: "Medium", last: "Phone · yesterday", action: "PTP reminder" },
-  { id: "C016", name: "Lauren Lewis", account: "PL-23410", branch: "Branch 104", branchId: "104", dpd: 9, amount: "$5,200", risk: "Low", contact: "High", ptp: "Kept before", priority: "Low", last: "SMS · today", action: "Monitor" },
+  {
+    id: "C001",
+    name: "Michael Carter",
+    account: "AL-10482",
+    branch: "Branch 101",
+    branchId: "101",
+    dpd: 38,
+    amount: "$24,500",
+    risk: "High",
+    contact: "High",
+    ptp: "Broken",
+    priority: "High",
+    last: "Phone · 2d ago",
+    action: "Call today",
+  },
+  {
+    id: "C002",
+    name: "Jessica Williams",
+    account: "RL-10931",
+    branch: "Branch 101",
+    branchId: "101",
+    dpd: 31,
+    amount: "$18,400",
+    risk: "High",
+    contact: "Medium",
+    ptp: "None",
+    priority: "High",
+    last: "SMS · 4d ago",
+    action: "Field review",
+  },
+  {
+    id: "C003",
+    name: "David Johnson",
+    account: "PL-20884",
+    branch: "Branch 101",
+    branchId: "101",
+    dpd: 22,
+    amount: "$12,500",
+    risk: "Medium",
+    contact: "High",
+    ptp: "Due today",
+    priority: "High",
+    last: "Phone · yesterday",
+    action: "PTP reminder",
+  },
+  {
+    id: "C004",
+    name: "Emily Rodriguez",
+    account: "RL-11203",
+    branch: "Branch 104",
+    branchId: "104",
+    dpd: 64,
+    amount: "$42,800",
+    risk: "High",
+    contact: "Low",
+    ptp: "Broken",
+    priority: "High",
+    last: "No answer · 1d",
+    action: "Field visit",
+  },
+  {
+    id: "C005",
+    name: "Robert Miller",
+    account: "PL-22401",
+    branch: "Branch 101",
+    branchId: "101",
+    dpd: 16,
+    amount: "$9,200",
+    risk: "Medium",
+    contact: "High",
+    ptp: "Kept before",
+    priority: "Medium",
+    last: "SMS · today",
+    action: "Wait 24h",
+  },
+  {
+    id: "C006",
+    name: "Sarah Anderson",
+    account: "AL-30552",
+    branch: "Branch 101",
+    branchId: "101",
+    dpd: 45,
+    amount: "$28,600",
+    risk: "High",
+    contact: "Medium",
+    ptp: "None",
+    priority: "Medium",
+    last: "Email · 3d ago",
+    action: "Phone call",
+  },
+  {
+    id: "C007",
+    name: "James Wilson",
+    account: "RL-11782",
+    branch: "Branch 104",
+    branchId: "104",
+    dpd: 28,
+    amount: "$19,500",
+    risk: "Medium",
+    contact: "High",
+    ptp: "Kept before",
+    priority: "Medium",
+    last: "Phone · 1d",
+    action: "PTP reminder",
+  },
+  {
+    id: "C008",
+    name: "Amanda Thompson",
+    account: "PL-21056",
+    branch: "Branch 105",
+    branchId: "105",
+    dpd: 42,
+    amount: "$31,400",
+    risk: "High",
+    contact: "Medium",
+    ptp: "Broken",
+    priority: "High",
+    last: "SMS · 3d ago",
+    action: "Call today",
+  },
+  {
+    id: "C009",
+    name: "Christopher Martinez",
+    account: "RL-12304",
+    branch: "Branch 106",
+    branchId: "106",
+    dpd: 55,
+    amount: "$36,000",
+    risk: "High",
+    contact: "Low",
+    ptp: "None",
+    priority: "High",
+    last: "No answer · 2d",
+    action: "Field visit",
+  },
+  {
+    id: "C010",
+    name: "Ashley Taylor",
+    account: "AL-30891",
+    branch: "Branch 105",
+    branchId: "105",
+    dpd: 18,
+    amount: "$8,450",
+    risk: "Medium",
+    contact: "High",
+    ptp: "Due today",
+    priority: "Medium",
+    last: "Phone · today",
+    action: "PTP reminder",
+  },
+  {
+    id: "C011",
+    name: "Matthew Thomas",
+    account: "RL-13102",
+    branch: "Branch 201",
+    branchId: "201",
+    dpd: 71,
+    amount: "$48,000",
+    risk: "High",
+    contact: "Low",
+    ptp: "Broken",
+    priority: "High",
+    last: "No answer · 5d",
+    action: "Field visit",
+  },
+  {
+    id: "C012",
+    name: "Olivia Hernandez",
+    account: "PL-22890",
+    branch: "Branch 202",
+    branchId: "202",
+    dpd: 35,
+    amount: "$14,200",
+    risk: "High",
+    contact: "Medium",
+    ptp: "None",
+    priority: "High",
+    last: "SMS · 2d ago",
+    action: "Call today",
+  },
+  {
+    id: "C013",
+    name: "Daniel White",
+    account: "RL-14001",
+    branch: "Branch 106",
+    branchId: "106",
+    dpd: 12,
+    amount: "$6,800",
+    risk: "Low",
+    contact: "High",
+    ptp: "Kept before",
+    priority: "Medium",
+    last: "Phone · today",
+    action: "Wait 24h",
+  },
+  {
+    id: "C014",
+    name: "Megan Harris",
+    account: "AL-31204",
+    branch: "Branch 201",
+    branchId: "201",
+    dpd: 48,
+    amount: "$22,900",
+    risk: "High",
+    contact: "Medium",
+    ptp: "Broken",
+    priority: "High",
+    last: "Email · 4d ago",
+    action: "Phone call",
+  },
+  {
+    id: "C015",
+    name: "Brandon Clark",
+    account: "RL-14520",
+    branch: "Branch 202",
+    branchId: "202",
+    dpd: 25,
+    amount: "$11,400",
+    risk: "Medium",
+    contact: "High",
+    ptp: "Due today",
+    priority: "Medium",
+    last: "Phone · yesterday",
+    action: "PTP reminder",
+  },
+  {
+    id: "C016",
+    name: "Lauren Lewis",
+    account: "PL-23410",
+    branch: "Branch 104",
+    branchId: "104",
+    dpd: 9,
+    amount: "$5,200",
+    risk: "Low",
+    contact: "High",
+    ptp: "Kept before",
+    priority: "Low",
+    last: "SMS · today",
+    action: "Monitor",
+  },
 ];
 
 /* ─────────────── Customer Analytics Helpers ─────────────── */
@@ -226,7 +745,7 @@ function distributeProportionally(counts: number[], total: number): number[] {
 
   const exacts = counts.map((c) => (c / sum) * total);
   const floors = exacts.map((e) => Math.floor(e));
-  let remainder = total - floors.reduce((a, b) => a + b, 0);
+  const remainder = total - floors.reduce((a, b) => a + b, 0);
 
   const order = exacts
     .map((e, i) => ({ frac: counts[i]! > 0 ? e - floors[i]! : -1, i }))
@@ -271,11 +790,11 @@ export function getCustomersForDate(dateStr: string = "2026-09-15", branchId?: s
       adjDpd > 25 || adjPtp === "Broken" || adjPtp === "Due today"
         ? "High"
         : adjDpd > 12
-        ? "Medium"
-        : "Low";
+          ? "Medium"
+          : "Low";
 
     // Dynamic amount with minor interest accrual
-    const numericAmt = parseInt(c.amount.replace(/[\$,]/g, ""), 10);
+    const numericAmt = parseInt(c.amount.replace(/[$,]/g, ""), 10);
     const adjustedVal = Math.max(1000, numericAmt + Math.round(diffDays * 12));
     const adjAmount = `$${adjustedVal.toLocaleString("en-US")}`;
 
@@ -293,10 +812,10 @@ export function getCustomersForDate(dateStr: string = "2026-09-15", branchId?: s
 
 export function getCustomerAnalytics(branchId?: string | null, dateStr: string = "2026-09-15") {
   const filtered = getCustomersForDate(dateStr, branchId);
-  
+
   const branchData = branchId ? branches.find((b) => b.id === branchId) : null;
-  const targetTotal = branchData 
-    ? branchData.accounts 
+  const targetTotal = branchData
+    ? branchData.accounts
     : branches.reduce((s, b) => s + b.accounts, 0);
 
   // Time delta offset from baseline 15 Sep
@@ -310,7 +829,7 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
       filtered.filter((c) => c.priority === "Medium").length,
       filtered.filter((c) => c.priority === "Low").length,
     ],
-    targetTotal
+    targetTotal,
   );
 
   const [highRisk, medRisk, lowRisk] = distributeProportionally(
@@ -319,7 +838,7 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
       filtered.filter((c) => c.risk === "Medium").length,
       filtered.filter((c) => c.risk === "Low").length,
     ],
-    targetTotal
+    targetTotal,
   );
 
   const [ptpBroken, ptpDue, ptpKept, ptpNone] = distributeProportionally(
@@ -329,7 +848,7 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
       filtered.filter((c) => c.ptp === "Kept before").length,
       filtered.filter((c) => c.ptp === "None" || c.ptp === "Pending").length,
     ],
-    targetTotal
+    targetTotal,
   );
 
   const [highContact, medContact, lowContact] = distributeProportionally(
@@ -338,7 +857,7 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
       filtered.filter((c) => c.contact === "Medium").length,
       filtered.filter((c) => c.contact === "Low").length,
     ],
-    targetTotal
+    targetTotal,
   );
 
   const [dpd0_30, dpd31_60, dpd61_90, dpd90plus] = distributeProportionally(
@@ -348,7 +867,7 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
       filtered.filter((c) => c.dpd > 60 && c.dpd <= 90).length,
       filtered.filter((c) => c.dpd > 90).length,
     ],
-    targetTotal
+    targetTotal,
   );
 
   // Dynamic Delinquency Base scaled with time delta
@@ -358,7 +877,9 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
   const needsAttention = Math.min(highPriority!, delinquent);
 
   // Dynamic Exposure & Rates
-  const baseExposure = branchData ? parseFloat(branchData.recovered.replace(/[\$M]/g, "")) * 0.65 : 8.4;
+  const baseExposure = branchData
+    ? parseFloat(branchData.recovered.replace(/[$M]/g, "")) * 0.65
+    : 8.4;
   const dynExposure = (baseExposure + diffDays * 0.06).toFixed(1);
   const baseContactRate = branchData ? branchData.contactRate : networkTotals.avgContactRate;
   const dynContactRate = Math.min(88, Math.max(54, baseContactRate - Math.round(diffDays * 0.3)));
@@ -377,7 +898,12 @@ export function getCustomerAnalytics(branchId?: string | null, dateStr: string =
     risk: { high: highRisk!, medium: medRisk!, low: lowRisk! },
     ptp: { broken: ptpBroken!, due: ptpDue!, kept: ptpKept!, none: ptpNone! },
     contactability: { high: highContact!, medium: medContact!, low: lowContact! },
-    dpd: { bucket0_30: dpd0_30!, bucket31_60: dpd31_60!, bucket61_90: dpd61_90!, bucket90plus: dpd90plus! },
+    dpd: {
+      bucket0_30: dpd0_30!,
+      bucket31_60: dpd31_60!,
+      bucket61_90: dpd61_90!,
+      bucket90plus: dpd90plus!,
+    },
   };
 }
 
@@ -430,7 +956,16 @@ export interface CustomerDetailContext {
     suggestedJourney: { step: string; channel: string; icon: string }[];
   };
   ruleChecks: { label: string; passed: boolean }[];
-  timeline: { id: string; type: "ptp" | "phone" | "sms" | "payment" | "visit"; title: string; note: string; timestamp: string; date: string; isGood?: boolean; isAlert?: boolean }[];
+  timeline: {
+    id: string;
+    type: "ptp" | "phone" | "sms" | "payment" | "visit";
+    title: string;
+    note: string;
+    timestamp: string;
+    date: string;
+    isGood?: boolean;
+    isAlert?: boolean;
+  }[];
 }
 
 export interface CustomerTrajectoryProfile {
@@ -442,35 +977,118 @@ export interface CustomerTrajectoryProfile {
 
 export const CUSTOMER_TRAJECTORIES: Record<string, CustomerTrajectoryProfile> = {
   // Tampa Branch (Diverse mix of rapid escalation, stable, and improving cure accounts)
-  C001: { d30Ratio: 0.48, d15Ratio: 0.74, direction: "Deteriorating", story: "Rapid delinquency acceleration following missed auto-debit." },
-  C002: { d30Ratio: 0.45, d15Ratio: 0.71, direction: "Deteriorating", story: "Steadily crossed 30+ DPD boundary over the last billing cycle." },
-  C003: { d30Ratio: 0.86, d15Ratio: 0.95, direction: "Stable", story: "Delinquency holding steady in 20–25 DPD band awaiting salary credit." },
-  C005: { d30Ratio: 1.50, d15Ratio: 1.19, direction: "Improving", story: "Account curing! DPD decreased from 24 to 16 following partial payment." },
-  C006: { d30Ratio: 0.44, d15Ratio: 0.71, direction: "Deteriorating", story: "Fast forward roll into 31–60 bucket; broken commitment unfulfilled." },
+  C001: {
+    d30Ratio: 0.48,
+    d15Ratio: 0.74,
+    direction: "Deteriorating",
+    story: "Rapid delinquency acceleration following missed auto-debit.",
+  },
+  C002: {
+    d30Ratio: 0.45,
+    d15Ratio: 0.71,
+    direction: "Deteriorating",
+    story: "Steadily crossed 30+ DPD boundary over the last billing cycle.",
+  },
+  C003: {
+    d30Ratio: 0.86,
+    d15Ratio: 0.95,
+    direction: "Stable",
+    story: "Delinquency holding steady in 20–25 DPD band awaiting salary credit.",
+  },
+  C005: {
+    d30Ratio: 1.5,
+    d15Ratio: 1.19,
+    direction: "Improving",
+    story: "Account curing! DPD decreased from 24 to 16 following partial payment.",
+  },
+  C006: {
+    d30Ratio: 0.44,
+    d15Ratio: 0.71,
+    direction: "Deteriorating",
+    story: "Fast forward roll into 31–60 bucket; broken commitment unfulfilled.",
+  },
 
   // Dallas Branch (High exposure & distinct delinquency curves)
-  C004: { d30Ratio: 0.59, d15Ratio: 0.81, direction: "Deteriorating", story: "Chronic delinquency hardening; roll forward to 60+ DPD bucket without cure." },
-  C007: { d30Ratio: 0.78, d15Ratio: 0.89, direction: "Stable", story: "Moderate delinquency progression within early-to-mid bucket." },
-  C016: { d30Ratio: 0.00, d15Ratio: 0.44, direction: "Deteriorating", story: "Soft initial delinquency; newly slipped into 1–10 DPD window." },
+  C004: {
+    d30Ratio: 0.59,
+    d15Ratio: 0.81,
+    direction: "Deteriorating",
+    story: "Chronic delinquency hardening; roll forward to 60+ DPD bucket without cure.",
+  },
+  C007: {
+    d30Ratio: 0.78,
+    d15Ratio: 0.89,
+    direction: "Stable",
+    story: "Moderate delinquency progression within early-to-mid bucket.",
+  },
+  C016: {
+    d30Ratio: 0.0,
+    d15Ratio: 0.44,
+    direction: "Deteriorating",
+    story: "Soft initial delinquency; newly slipped into 1–10 DPD window.",
+  },
 
   // Atlanta Branch (Mid-to-high delinquency jumps)
-  C008: { d30Ratio: 0.57, d15Ratio: 0.81, direction: "Deteriorating", story: "PTP breakage caused sharp 15-day escalation from 34 to 42 DPD." },
-  C010: { d30Ratio: 0.44, d15Ratio: 0.77, direction: "Deteriorating", story: "New roll from grace period into 15–30 DPD bracket." },
+  C008: {
+    d30Ratio: 0.57,
+    d15Ratio: 0.81,
+    direction: "Deteriorating",
+    story: "PTP breakage caused sharp 15-day escalation from 34 to 42 DPD.",
+  },
+  C010: {
+    d30Ratio: 0.44,
+    d15Ratio: 0.77,
+    direction: "Deteriorating",
+    story: "New roll from grace period into 15–30 DPD bracket.",
+  },
 
   // Phoenix Branch (Includes active curing customer and chronic installment)
-  C009: { d30Ratio: 0.63, d15Ratio: 0.83, direction: "Deteriorating", story: "Hardening commercial installment risk; uncontactable over last 2 cycles." },
-  C013: { d30Ratio: 1.50, d15Ratio: 1.25, direction: "Improving", story: "Improving payment trajectory; borrower actively reducing past due days." },
+  C009: {
+    d30Ratio: 0.63,
+    d15Ratio: 0.83,
+    direction: "Deteriorating",
+    story: "Hardening commercial installment risk; uncontactable over last 2 cycles.",
+  },
+  C013: {
+    d30Ratio: 1.5,
+    d15Ratio: 1.25,
+    direction: "Improving",
+    story: "Improving payment trajectory; borrower actively reducing past due days.",
+  },
 
   // Charlotte Branch (Severe delinquency escalation)
-  C011: { d30Ratio: 0.59, d15Ratio: 0.81, direction: "Deteriorating", story: "Severe default trajectory approaching 90+ DPD charge-off threshold." },
-  C014: { d30Ratio: 0.58, d15Ratio: 0.81, direction: "Deteriorating", story: "Repeated broken commitments driving progression towards late stage." },
+  C011: {
+    d30Ratio: 0.59,
+    d15Ratio: 0.81,
+    direction: "Deteriorating",
+    story: "Severe default trajectory approaching 90+ DPD charge-off threshold.",
+  },
+  C014: {
+    d30Ratio: 0.58,
+    d15Ratio: 0.81,
+    direction: "Deteriorating",
+    story: "Repeated broken commitments driving progression towards late stage.",
+  },
 
   // Chicago Branch (Steady mid-delinquency tracking)
-  C012: { d30Ratio: 0.46, d15Ratio: 0.74, direction: "Deteriorating", story: "Crossed from 15 DPD into 30+ DPD threshold over past 30 days." },
-  C015: { d30Ratio: 0.60, d15Ratio: 0.80, direction: "Stable", story: "Holding within mid-delinquency band; partial commitment pending." },
+  C012: {
+    d30Ratio: 0.46,
+    d15Ratio: 0.74,
+    direction: "Deteriorating",
+    story: "Crossed from 15 DPD into 30+ DPD threshold over past 30 days.",
+  },
+  C015: {
+    d30Ratio: 0.6,
+    d15Ratio: 0.8,
+    direction: "Stable",
+    story: "Holding within mid-delinquency band; partial commitment pending.",
+  },
 };
 
-export function getCustomerDetailContext(customerId: string, dateStr: string = "2026-09-15"): CustomerDetailContext {
+export function getCustomerDetailContext(
+  customerId: string,
+  dateStr: string = "2026-09-15",
+): CustomerDetailContext {
   const adjustedList = getCustomersForDate(dateStr);
   const c = adjustedList.find((x) => x.id === customerId) || adjustedList[0]!;
 
@@ -481,7 +1099,20 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
   const targetDateObj = new Date(`${dateStr}T00:00:00`);
   const d30Obj = new Date(targetDateObj.getTime() - 30 * 24 * 60 * 60 * 1000);
   const d15Obj = new Date(targetDateObj.getTime() - 15 * 24 * 60 * 60 * 1000);
-  const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  const months = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+  ];
 
   const d30Label = `${months[d30Obj.getMonth()]} ${d30Obj.getDate()}`;
   const d15Label = `${months[d15Obj.getMonth()]} ${d15Obj.getDate()}`;
@@ -599,7 +1230,11 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
   const profile = CUSTOMER_TRAJECTORIES[c.id] ?? {
     d30Ratio: c.risk === "High" ? 0.55 : c.risk === "Medium" ? 0.75 : 1.2,
     d15Ratio: c.risk === "High" ? 0.78 : c.risk === "Medium" ? 0.88 : 1.1,
-    direction: (c.risk === "High" ? "Deteriorating" : c.risk === "Medium" ? "Stable" : "Improving") as "Deteriorating" | "Stable" | "Improving",
+    direction: (c.risk === "High"
+      ? "Deteriorating"
+      : c.risk === "Medium"
+        ? "Stable"
+        : "Improving") as "Deteriorating" | "Stable" | "Improving",
     story: "Standard account delinquency cycle tracking.",
   };
 
@@ -629,11 +1264,15 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
     c.risk === "High" || c.dpd > 30
       ? "Elevated Default Risk"
       : c.risk === "Medium" || c.dpd > 15
-      ? "Moderate Risk Exposure"
-      : "Low Delinquency Tier";
+        ? "Moderate Risk Exposure"
+        : "Low Delinquency Tier";
 
   return {
-    product: c.account.startsWith("PL") ? "Personal Loan" : c.account.startsWith("AL") ? "Auto Loan" : "Retail Installment Loan",
+    product: c.account.startsWith("PL")
+      ? "Personal Loan"
+      : c.account.startsWith("AL")
+        ? "Auto Loan"
+        : "Retail Installment Loan",
     dpdHistory: [
       { period: d30Label, dpd: d30Dpd },
       { period: d15Label, dpd: d15Dpd },
@@ -668,8 +1307,18 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
       d15Dpd,
       delta30Dpd,
       delta15Dpd,
-      dpdChange: delta30Dpd > 0 ? `+${delta30Dpd} DPD (30d)` : delta30Dpd < 0 ? `${delta30Dpd} DPD (30d)` : "0 DPD (Stable)",
-      dpd15Change: delta15Dpd > 0 ? `+${delta15Dpd} DPD (15d)` : delta15Dpd < 0 ? `${delta15Dpd} DPD (15d)` : "0 DPD (Stable)",
+      dpdChange:
+        delta30Dpd > 0
+          ? `+${delta30Dpd} DPD (30d)`
+          : delta30Dpd < 0
+            ? `${delta30Dpd} DPD (30d)`
+            : "0 DPD (Stable)",
+      dpd15Change:
+        delta15Dpd > 0
+          ? `+${delta15Dpd} DPD (15d)`
+          : delta15Dpd < 0
+            ? `${delta15Dpd} DPD (15d)`
+            : "0 DPD (Stable)",
       exposureRatio: c.risk === "High" ? "Above branch median" : "Within normal limits",
       severityTier,
       notes: `${c.dpd} DPD as of ${currLabel}. Outstanding balance ${c.amount}.`,
@@ -679,8 +1328,12 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
         ? `${c.dpd} DPD as of ${currLabel} (${delta30Dpd} DPD reduction over 30d — active account self-cure)`
         : `${c.dpd} DPD as of ${currLabel} (+${delta30Dpd} DPD over 30 days, +${delta15Dpd} DPD recent 15d velocity)`,
       profile.story,
-      isBrokenPtp ? "Promise-to-Pay broken with no payment received" : "Payment commitment active requiring confirmation",
-      c.contact === "High" ? "High phone responsiveness — prime window for direct phone resolution" : "Low digital responsiveness — requires specialized agent follow-up",
+      isBrokenPtp
+        ? "Promise-to-Pay broken with no payment received"
+        : "Payment commitment active requiring confirmation",
+      c.contact === "High"
+        ? "High phone responsiveness — prime window for direct phone resolution"
+        : "Low digital responsiveness — requires specialized agent follow-up",
     ],
     nba: {
       action: c.contact === "Low" ? "Schedule Field Visit" : "Call Customer",
@@ -688,9 +1341,14 @@ export function getCustomerDetailContext(customerId: string, dateStr: string = "
       reason: isBrokenPtp
         ? `Recent PTP break + ${c.dpd} DPD + high phone contactability.`
         : `Delinquency hardening (${c.dpd} DPD) + high exposure + timely intervention window.`,
-      approach: "Acknowledge the missed commitment, confirm immediate payment capacity, and agree on a realistic partial settlement or PTP date.",
+      approach:
+        "Acknowledge the missed commitment, confirm immediate payment capacity, and agree on a realistic partial settlement or PTP date.",
       suggestedJourney: [
-        { step: "Today", channel: c.contact === "Low" ? "Field Visit" : "Phone Call", icon: "Phone" },
+        {
+          step: "Today",
+          channel: c.contact === "Low" ? "Field Visit" : "Phone Call",
+          icon: "Phone",
+        },
         { step: "+2 days", channel: "SMS / Email", icon: "MessageSquare" },
         { step: "Escalate", channel: "Specialized Outreach", icon: "MapPin" },
       ],

@@ -20,6 +20,8 @@ public/
 
 # Environment Variables
 .env
+.env.*
+!.env.example
 .env.test
 .env.local
 .env.*.local
@@ -27,6 +29,8 @@ public/
 # Logs
 logs
 *.log
+*.err
+*.out
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
@@ -36,8 +40,20 @@ coverage/
 *.lcov
 .nyc_output
 
+# Local planning and test artifacts
+context/
+testing/
+implementation-phases/
+
 # Typescript
 *.tsbuildinfo
+
+# Local databases and runtime files
+*.db
+*.sqlite
+*.sqlite3
+*.pid
+*.bak
 
 # Python
 .venv/
