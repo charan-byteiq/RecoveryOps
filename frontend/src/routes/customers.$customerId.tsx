@@ -3,7 +3,7 @@ import { useState } from "react";
 import { toast } from "sonner";
 import { ArrowLeft, Check, Phone, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { CUSTOMERS, bestChannel, type CustomerData } from "@/data/customer-nba-data";
+import { CUSTOMERS, bestTouchpoint, type CustomerData } from "@/data/customer-nba-data";
 
 export const Route = createFileRoute("/customers/$customerId")({
   head: () => ({
@@ -29,37 +29,37 @@ function CustomerDetailView() {
   const [notes, setNotes] = useState("Agreed to cure partial balance.");
   const [timelineList, setTimelineList] = useState([
     {
-      title: `${bestChannel(c)} outreach`,
-      category: "Outreach",
+      title: `${bestTouchpoint(c)} outreach`,
+      category: "Outreach History",
       time: "2d ago",
       status: c.reach > 40 ? "Response received" : "No response",
       tone: "blue",
     },
     {
-      title: `Content sent: ${c.content[0]}`,
+      title: `Template dispatched: ${c.content[0]}`,
       category: "Engagement",
       time: "5d ago",
       status: `Opened${c.click > 30 ? " and clicked" : ""}`,
       tone: "green",
     },
     {
-      title: "Payment received",
-      category: "Payment",
+      title: `${c.repaymentType} received`,
+      category: "Repayment Behavior",
       time: `${c.last}d ago`,
-      status: "Applied to account",
+      status: `Applied to account · ${c.cov}% coverage`,
       tone: "green",
     },
     {
-      title: `Reminder via ${c.aff[1] ? c.aff[1][0] : "SMS"}`,
-      category: "Outreach",
+      title: `Follow-up via ${c.aff[1] ? c.aff[1][0] : "SMS Alert"}`,
+      category: "Outreach History",
       time: `${c.last + 7}d ago`,
       status: "Delivered",
       tone: "blue",
     },
   ]);
 
-  const bCh = bestChannel(c);
-  const fallbackCh = c.aff[1] ? c.aff[1][0] : "SMS";
+  const bTouch = bestTouchpoint(c);
+  const fallbackTouch = c.aff[1] ? c.aff[1][0] : "SMS Alert";
 
   const wk = [
     Math.ceil(c.touches / 3),
@@ -74,7 +74,7 @@ function CustomerDetailView() {
     setTimelineList([
       {
         title: `Outcome Logged: ${selectedOutcome}`,
-        category: "Outreach",
+        category: "Outreach History",
         time: "Just now",
         status: selectedOutcome === "Promise to Pay" ? `${ptpAmount} PTP` : "Logged",
         tone: "green",
@@ -131,7 +131,7 @@ function CustomerDetailView() {
                 {getTierBadge(c.tier)}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                {c.id} · Account {c.acct} · Exposure ${c.exp.toLocaleString()}
+                {c.id} · Account {c.acct} · Total Exposure ${c.exp.toLocaleString()}
               </p>
             </div>
 
@@ -144,19 +144,19 @@ function CustomerDetailView() {
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Payment Coverage
+                  Repayment Ratio
                 </div>
                 <div className="mt-0.5 text-2xl font-bold text-foreground">{c.cov}%</div>
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Best Channel
+                  Best Contact Method
                 </div>
-                <div className="mt-0.5 text-xl font-bold text-primary">{bCh}</div>
+                <div className="mt-0.5 text-xl font-bold text-primary">{bTouch}</div>
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Cadence
+                  Follow-up Timing
                 </div>
                 <div className="mt-0.5 text-xl font-bold text-foreground">{c.cad[0]}</div>
               </div>
@@ -166,31 +166,35 @@ function CustomerDetailView() {
 
         {/* 3 MODEL DETAIL CARDS */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-          {/* 1. Engagement Model · Content */}
+          {/* 1. Engagement Model · Suggested Template */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Engagement Model · Content</h3>
+              <h3 className="text-sm font-bold text-foreground">
+                Engagement Model · Suggested Template
+              </h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Recommended content and message purpose
+                Recommended template category & operational objective
               </p>
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Content category</span>
-                  <span className="font-bold text-primary">{c.content[0]}</span>
+                  <span className="text-muted-foreground">Suggested Template</span>
+                  <span className="font-bold text-primary truncate max-w-[170px] text-right">
+                    {c.content[0]}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Message purpose</span>
+                  <span className="text-muted-foreground">Template Objective</span>
                   <span className="font-semibold text-foreground text-right max-w-[180px]">
                     {c.content[1]}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Open rate</span>
+                  <span className="text-muted-foreground">Historical open rate</span>
                   <span className="font-semibold text-foreground">{c.open}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Click rate</span>
+                  <span className="text-muted-foreground">Link engagement</span>
                   <span className="font-semibold text-foreground">{c.click}%</span>
                 </div>
                 <div className="flex justify-between">
@@ -201,46 +205,58 @@ function CustomerDetailView() {
             </div>
           </div>
 
-          {/* 2. Payment Model · Cadence */}
+          {/* 2. Payment Model · Repayment Behavior */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Payment Model · Cadence</h3>
-              <p className="text-xs text-muted-foreground mb-4">Payment recency and frequency</p>
+              <h3 className="text-sm font-bold text-foreground">
+                Payment Model · Repayment Behavior
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Turnaround time, recency & fulfillment pattern
+              </p>
 
               <div className="space-y-2 text-xs">
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Contact attempts</span>
-                  <span className="font-semibold text-foreground">{c.touches}</span>
+                  <span className="text-muted-foreground">Repayment Profile</span>
+                  <span
+                    className={`font-bold ${c.repaymentType === "Full Repayment" ? "text-emerald-600 dark:text-emerald-400" : c.repaymentType === "Partial Repayment" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
+                  >
+                    {c.repaymentType}
+                  </span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Payments in last 30 days</span>
+                  <span className="text-muted-foreground">Time taken to repay</span>
+                  <span className="font-semibold text-foreground">{c.daysToRepay} days</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Repayments (last 30d)</span>
                   <span className="font-semibold text-foreground">{c.pays}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Days since last payment</span>
+                  <span className="text-muted-foreground">Days since last repayment</span>
                   <span className="font-semibold text-foreground">{c.last}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Payment coverage ratio</span>
+                  <span className="text-muted-foreground">Repayment coverage ratio</span>
                   <span className="font-semibold text-foreground">{c.cov}%</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-muted-foreground">Contact frequency</span>
-                  <span className="font-semibold text-foreground">{c.cad[1]}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-muted-foreground">Recommended cadence</span>
+                  <span className="text-muted-foreground">Follow-up schedule</span>
                   <span className="font-bold text-primary">{c.cad[0]}</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* 3. Outreach Model · Channel */}
+          {/* 3. Outreach Model · Contact Method */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Outreach Model · Channel</h3>
-              <p className="text-xs text-muted-foreground mb-4">Channel affinity score</p>
+              <h3 className="text-sm font-bold text-foreground">
+                Outreach Model · Contact Method
+              </h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Contact method affinity & post-due activity
+              </p>
 
               <div className="space-y-2.5">
                 {c.aff.map(([name, score], idx) => {
@@ -272,19 +288,21 @@ function CustomerDetailView() {
             </div>
 
             <div className="mt-4 border-t pt-2.5 flex justify-between text-xs">
-              <span className="text-muted-foreground">Best response window</span>
+              <span className="text-muted-foreground">Optimal response window</span>
               <span className="font-semibold text-foreground">{c.rsp}</span>
             </div>
           </div>
         </div>
 
-        {/* 2 COLUMN MID ROW: Contacts/Payments chart & Why this action */}
+        {/* 2 COLUMN MID ROW: Outreach attempts post-due date & Why this action */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-          {/* Card 4: Contact attempts and payments */}
+          {/* Card 4: Post-due date outreach and repayments */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-foreground">Contact attempts and payments</h3>
+            <h3 className="text-sm font-bold text-foreground">
+              Post-due date outreach and repayments
+            </h3>
             <p className="text-xs text-muted-foreground mb-4">
-              Last 4 weeks · helps set follow-up timing
+              Weekly touchpoints occurred post due-date up to current date ({c.touches} total)
             </p>
 
             <div className="flex items-end gap-4 h-28 my-3 pb-2 border-b">
@@ -296,7 +314,7 @@ function CustomerDetailView() {
                   />
                   <span className="text-muted-foreground text-[10px]">Week {i + 1}</span>
                   <span className="font-semibold text-foreground text-[11px] text-center">
-                    {v} contacts
+                    {v} touches
                     {pw[i] ? " · paid" : ""}
                   </span>
                 </div>
@@ -311,16 +329,17 @@ function CustomerDetailView() {
 
             <div className="space-y-2.5 text-xs">
               <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
-                Payment coverage is <b>{c.cov}%</b> and the last payment was <b>{c.last}</b> days
-                ago.
+                Repayment coverage is <b>{c.cov}%</b> ({c.repaymentType.toLowerCase()}), with{" "}
+                <b>{c.daysToRepay} days</b> turnaround time to repay.
               </div>
               <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
-                <b>{bCh}</b> has the highest affinity (<b>{c.aff[0]![1]}</b>) for this customer.
+                <b>{bTouch}</b> demonstrates the highest affinity score (<b>{c.aff[0]![1]}</b>) for
+                this borrower.
               </div>
               <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
                 {c.reach < 40
-                  ? `Response rate is low (${c.reach}%), so a ${bCh.toLowerCase()} touch is preferred over digital reminders.`
-                  : `Responsive customer (${c.reach}%), so ${c.content[0].toLowerCase()} content should land effectively.`}
+                  ? `Response rate is low (${c.reach}%), so a direct ${bTouch.toLowerCase()} approach with the ${c.content[0]} is prioritized over automated reminders.`
+                  : `Customer shows responsive engagement (${c.reach}%), making the ${c.content[0]} optimal for fast resolution.`}
               </div>
             </div>
           </div>
@@ -335,10 +354,10 @@ function CustomerDetailView() {
                 Next Best Action · Prescribed
               </span>
               <h2 className="mt-2 text-2xl font-bold tracking-tight">
-                {c.content[0]} via {bCh}
+                {c.content[0]} via {bTouch}
               </h2>
               <p className="mt-0.5 text-xs text-white/85">
-                {c.cad[0]} · best window {c.rsp}
+                Timing: {c.cad[0]} · Optimal window {c.rsp}
               </p>
             </div>
             <button
@@ -353,7 +372,7 @@ function CustomerDetailView() {
           <div className="bg-card text-foreground p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Content · Engagement
+                Suggested Template · Engagement
               </div>
               <p className="mt-1 text-xs">
                 <b className="text-foreground">{c.content[0]}</b>
@@ -364,34 +383,36 @@ function CustomerDetailView() {
 
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Channel · Outreach
+                Contact Method · Outreach
               </div>
               <p className="mt-1 text-xs">
-                <b className="text-foreground">{bCh}</b>
+                <b className="text-foreground">{bTouch}</b>
                 <br />
-                <span className="text-muted-foreground">Fallback: {fallbackCh}</span>
+                <span className="text-muted-foreground">Alternative touch: {fallbackTouch}</span>
               </p>
             </div>
 
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Cadence · Payment
+                Follow-up Timing · Repayment
               </div>
               <p className="mt-1 text-xs">
                 <b className="text-foreground">{c.cad[0]}</b>
                 <br />
                 <span className="text-muted-foreground">
-                  Review again after {c.cad[1].toLowerCase()} contact
+                  Review again after {c.cad[1].toLowerCase()}
                 </span>
               </p>
             </div>
 
             <div className="md:col-span-3 border-t pt-4 flex flex-wrap justify-end gap-3">
               <button
-                onClick={() => toast.info("Alternative contact channel flagged for follow-up.")}
+                onClick={() =>
+                  toast.info("Alternative contact method selected for operational follow-up.")
+                }
                 className="rounded-xl border border-border/80 bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition"
               >
-                Change Channel
+                Switch Contact Method
               </button>
               <button
                 onClick={() => toast.success(`Action approved for ${c.name}`)}
@@ -407,7 +428,7 @@ function CustomerDetailView() {
         <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
           <h3 className="text-sm font-bold text-foreground">Activity timeline</h3>
           <p className="text-xs text-muted-foreground mb-4">
-            Recent outreach, content and payment events
+            Recent outreach, template delivery and repayment events
           </p>
 
           <div className="border-l-2 border-border/80 ml-3 pl-4 space-y-3">
@@ -444,7 +465,7 @@ function CustomerDetailView() {
                 <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   Outcome Capture
                 </p>
-                <h3 className="text-lg font-bold text-foreground">Record Call Outcome</h3>
+                <h3 className="text-lg font-bold text-foreground">Record Outreach Outcome</h3>
               </div>
               <button
                 className="size-8 rounded-lg hover:bg-muted grid place-items-center"
@@ -458,7 +479,7 @@ function CustomerDetailView() {
               <div className="rounded-lg border bg-muted/30 p-3">
                 <span className="font-bold text-foreground">{c.name}</span> ({c.id}) •{" "}
                 <span className="text-muted-foreground">
-                  ${c.exp.toLocaleString()} balance · {c.dpd} DPD
+                  ${c.exp.toLocaleString()} balance · {c.dpd} DPD · {c.repaymentType}
                 </span>
               </div>
 
@@ -467,13 +488,13 @@ function CustomerDetailView() {
                   Action Executed
                 </label>
                 <div className="rounded-lg border bg-card p-2.5 font-semibold flex items-center gap-2">
-                  <Phone className="size-3.5 text-primary" /> {bCh} to Customer
+                  <Phone className="size-3.5 text-primary" /> {bTouch} with {c.content[0]}
                 </div>
               </div>
 
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
-                  Call Disposition
+                  Outreach Disposition
                 </label>
                 <div className="grid grid-cols-2 gap-2">
                   {[
@@ -531,7 +552,7 @@ function CustomerDetailView() {
 
               <div>
                 <label className="block text-xs font-semibold text-muted-foreground mb-1">
-                  Agent Call Notes
+                  Agent Follow-up Notes
                 </label>
                 <textarea
                   rows={3}

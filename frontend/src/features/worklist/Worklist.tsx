@@ -3,16 +3,16 @@ import { useState, useMemo } from "react";
 import { AppShell } from "@/components/app-shell";
 import {
   CUSTOMERS,
-  CHANNELS,
-  CONTENTS,
-  bestChannel,
+  TOUCHPOINT_METHODS,
+  TEMPLATES,
+  bestTouchpoint,
   type CustomerData,
 } from "@/data/customer-nba-data";
 
 export function Worklist() {
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
-  const [channelFilter, setChannelFilter] = useState<string>("All");
-  const [contentFilter, setContentFilter] = useState<string>("All");
+  const [touchpointFilter, setTouchpointFilter] = useState<string>("All");
+  const [templateFilter, setTemplateFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const customers = CUSTOMERS;
@@ -20,14 +20,14 @@ export function Worklist() {
   const filteredCustomers = useMemo(() => {
     return customers.filter((c) => {
       const matchP = priorityFilter === "All" || c.tier === priorityFilter;
-      const matchC = channelFilter === "All" || bestChannel(c) === channelFilter;
-      const matchM = contentFilter === "All" || c.content[0] === contentFilter;
+      const matchC = touchpointFilter === "All" || bestTouchpoint(c) === touchpointFilter;
+      const matchM = templateFilter === "All" || c.content[0] === templateFilter;
       const matchQ =
         searchQuery === "" ||
         (c.name + c.id + c.acct).toLowerCase().includes(searchQuery.toLowerCase());
       return matchP && matchC && matchM && matchQ;
     });
-  }, [customers, priorityFilter, channelFilter, contentFilter, searchQuery]);
+  }, [customers, priorityFilter, touchpointFilter, templateFilter, searchQuery]);
 
   const hiCount = customers.filter((c) => c.tier === "High").length;
   const lowCovCount = customers.filter((c) => c.cov < 25).length;
@@ -105,7 +105,7 @@ export function Worklist() {
         <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
           <h2 className="text-base font-bold text-foreground">Prioritised customer list</h2>
           <p className="text-xs text-muted-foreground mt-0.5">
-            Each customer gets a priority rank and the right content, channel and cadence.
+            Suggested engagement template, contact method, and follow-up timing for each borrower.
           </p>
 
           {/* FILTER BARS */}
@@ -137,15 +137,15 @@ export function Worklist() {
               ))}
             </div>
 
-            {/* Channel Filter */}
+            {/* Contact Method Filter */}
             <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground text-xs font-medium">Channel</span>
-              {["All", ...CHANNELS].map((c) => (
+              <span className="text-muted-foreground text-xs font-medium">Contact Method</span>
+              {["All", ...TOUCHPOINT_METHODS].map((c) => (
                 <button
                   key={c}
-                  onClick={() => setChannelFilter(c)}
+                  onClick={() => setTouchpointFilter(c)}
                   className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    channelFilter === c
+                    touchpointFilter === c
                       ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                       : "text-foreground hover:bg-muted"
                   }`}
@@ -156,15 +156,17 @@ export function Worklist() {
             </div>
           </div>
 
-          {/* Content Category Filter */}
+          {/* Template Selection Filter */}
           <div className="flex flex-wrap items-center gap-1.5 py-2 text-xs">
-            <span className="text-muted-foreground text-xs font-medium mr-1">Content</span>
-            {["All", ...CONTENTS].map((m) => (
+            <span className="text-muted-foreground text-xs font-medium mr-1">
+              Suggested Template
+            </span>
+            {["All", ...TEMPLATES].map((m) => (
               <button
                 key={m}
-                onClick={() => setContentFilter(m)}
+                onClick={() => setTemplateFilter(m)}
                 className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                  contentFilter === m
+                  templateFilter === m
                     ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
                     : "text-foreground hover:bg-muted"
                 }`}
@@ -182,10 +184,10 @@ export function Worklist() {
                   <th className="px-4 py-2.5 font-semibold">Rank</th>
                   <th className="px-4 py-2.5 font-semibold">Customer</th>
                   <th className="px-4 py-2.5 font-semibold">Priority</th>
-                  <th className="px-4 py-2.5 font-semibold">Content</th>
-                  <th className="px-4 py-2.5 font-semibold">Cadence</th>
-                  <th className="px-4 py-2.5 font-semibold">Channel</th>
-                  <th className="px-4 py-2.5 font-semibold">Last Payment</th>
+                  <th className="px-4 py-2.5 font-semibold">Suggested Template</th>
+                  <th className="px-4 py-2.5 font-semibold">Follow-up Timing</th>
+                  <th className="px-4 py-2.5 font-semibold">Contact Method</th>
+                  <th className="px-4 py-2.5 font-semibold">Repayment Status</th>
                   <th className="px-4 py-2.5 text-right font-semibold">Action</th>
                 </tr>
               </thead>
@@ -216,20 +218,31 @@ export function Worklist() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{c.content[0]}</div>
                         <div className="text-[11px] text-muted-foreground">
-                          Open {c.open}% · Click {c.click}%
+                          Open {c.open}% · Interaction {c.click}%
                         </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{c.cad[0]}</div>
-                        <div className="text-[11px] text-muted-foreground">Coverage {c.cov}%</div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.touches} touches post due-date
+                        </div>
                       </td>
                       <td className="px-4 py-3">
-                        <div className="font-bold text-foreground">{bestChannel(c)}</div>
+                        <div className="font-bold text-foreground">{bestTouchpoint(c)}</div>
                         <div className="text-[11px] text-muted-foreground">
                           Affinity {c.aff[0]![1]}
                         </div>
                       </td>
-                      <td className="px-4 py-3 text-muted-foreground text-xs">{c.last}d ago</td>
+                      <td className="px-4 py-3 text-xs">
+                        <div
+                          className={`font-semibold ${c.repaymentType === "Full Repayment" ? "text-emerald-600 dark:text-emerald-400" : c.repaymentType === "Partial Repayment" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
+                        >
+                          {c.repaymentType}
+                        </div>
+                        <div className="text-[11px] text-muted-foreground">
+                          {c.last}d ago ({c.cov}% cov)
+                        </div>
+                      </td>
                       <td className="px-4 py-3 text-right">
                         <Link
                           to="/customers/$customerId"

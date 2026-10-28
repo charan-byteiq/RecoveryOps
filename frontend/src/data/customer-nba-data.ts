@@ -8,19 +8,21 @@ export interface CustomerData {
   risk: string;
   ptp: string;
   reach: number;
-  ch: [string, number, number][];
-  aff: [string, number][];
+  ch: [string, number, number][]; // [touchpointMethod, successRate, costPerTouch]
+  aff: [string, number][]; // [touchpointMethod, affinityScore]
   pri: number;
   tier: "High" | "Medium" | "Low";
-  content: [string, string];
-  cad: [string, string];
-  touches: number;
-  cov: number;
-  pays: number;
-  last: number;
-  rsp: string;
-  open: number;
-  click: number;
+  content: [string, string]; // [templateName, templateObjective]
+  cad: [string, string]; // [followUpTiming, scheduleInterval]
+  touches: number; // total outreach attempts post due-date to current date
+  cov: number; // repayment ratio / coverage %
+  repaymentType: "Full Repayment" | "Partial Repayment" | "Pending Repayment";
+  daysToRepay: number; // turnaround time customer takes to repay
+  pays: number; // repayments count
+  last: number; // days since last payment
+  rsp: string; // optimal response window
+  open: number; // template open rate %
+  click: number; // link engagement rate %
 }
 
 const raw =
@@ -44,9 +46,9 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
   const fv = dpd >= 30 ? 85 : null;
 
   const ch: [string, number, number][] = [
-    ["Phone", ph, 4.5],
-    ["SMS", sms, 0.8],
-    ["Email", em, 0.3],
+    ["Direct Phone", ph, 4.5],
+    ["SMS Alert", sms, 0.8],
+    ["Digital Mail", em, 0.3],
   ];
   if (fv) ch.push(["Field Visit", fv, 32]);
 
@@ -55,7 +57,12 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
       ([n, s, c]) =>
         [
           n,
-          Math.round(s * 0.7 + (n === "Field Visit" ? (dpd - 30) * 0.5 : 0) + (n === "SMS" ? 4 : 0) - c / 4),
+          Math.round(
+            s * 0.7 +
+              (n === "Field Visit" ? (dpd - 30) * 0.5 : 0) +
+              (n === "SMS Alert" ? 4 : 0) -
+              c / 4,
+          ),
         ] as [string, number],
     )
     .sort((a, b) => b[1] - a[1]);
@@ -67,23 +74,46 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
     Math.round((100 - cov) * 0.4 + (100 - reach) * 0.35 + Math.min(100, (last / 60) * 100) * 0.25),
   );
   const tier: "High" | "Medium" | "Low" = pri >= 65 ? "High" : pri >= 45 ? "Medium" : "Low";
+
+  // Template suggestions for the Recovery Operations Frontline Team
   const content: [string, string] =
     ptp === "Due soon" && dpd >= 30
-      ? ["Settlement / PTP confirmation", "Final notice with settlement offer"]
+      ? [
+          "Settlement Offer Template",
+          "Objective: Secure binding settlement with formal waiver terms",
+        ]
       : dpd >= 30
-        ? ["Broken-PTP follow-up", "Re-commitment request with partial plan"]
+        ? [
+            "Broken-Commitment Re-engagement Template",
+            "Objective: Escalate broken PTP & propose restructuring plan",
+          ]
         : ptp === "Kept before"
-          ? ["Courteous reminder", "Payment link with due-date reminder"]
-          : ["Overdue reminder", "Statement & payment portal link"];
+          ? [
+              "Courtesy Due Reminder Template",
+              "Objective: Reinforce positive repayment track & share instant pay link",
+            ]
+          : [
+              "Standard Delinquency Notice Template",
+              "Objective: Present statement summary and portal resolution options",
+            ];
 
+  // Follow-up timing / contact intervals
   const cad: [string, string] =
     dpd >= 45
-      ? ["Every 2 days", "Daily until contact"]
+      ? ["Every 2 days", "Daily touch until borrower connects"]
       : dpd >= 30
-        ? ["Every 3 days", "Twice weekly"]
+        ? ["Every 3 days", "Twice-weekly structured follow-up"]
         : dpd >= 15
-          ? ["Weekly", "Weekly"]
-          : ["Every 10 days", "Biweekly"];
+          ? ["Weekly", "Weekly review & status check"]
+          : ["Every 10 days", "Bi-weekly monitoring cycle"];
+
+  // Outreach tracking post due-date up to current date
+  const touches = Math.max(2, Math.round(dpd / 7) + (i % 5) + (dpd > 30 ? 4 : 1));
+
+  // Repayment behavior analysis
+  const repaymentType: "Full Repayment" | "Partial Repayment" | "Pending Repayment" =
+    cov >= 60 ? "Full Repayment" : cov >= 20 ? "Partial Repayment" : "Pending Repayment";
+  const daysToRepay = Math.max(3, Math.round(dpd * 0.6 + (i % 4) * 3));
 
   return {
     id,
@@ -101,8 +131,10 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
     tier,
     content,
     cad,
-    touches: 4 + (i % 7),
+    touches,
     cov,
+    repaymentType,
+    daysToRepay,
     pays: dpd > 45 ? 0 : 1 + (i % 3),
     last,
     rsp: ["10:00–12:30", "2:00–5:00 PM", "9:00–11:00 AM"][i % 3]!,
@@ -113,14 +145,16 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
 
 CUSTOMERS.sort((a, b) => b.pri - a.pri);
 
-export const CHANNELS = ["Phone", "SMS", "Email", "Field Visit"];
-export const CONTENTS = [
-  "Settlement / PTP confirmation",
-  "Broken-PTP follow-up",
-  "Courteous reminder",
-  "Overdue reminder",
-];
-export const CADENCES = ["Every 2 days", "Every 3 days", "Weekly", "Every 10 days"];
+export const TOUCHPOINT_METHODS = ["Direct Phone", "SMS Alert", "Digital Mail", "Field Visit"];
 
-export const bestChannel = (c: CustomerData) => c.aff[0]![0];
+export const TEMPLATES = [
+  "Settlement Offer Template",
+  "Broken-Commitment Re-engagement Template",
+  "Courtesy Due Reminder Template",
+  "Standard Delinquency Notice Template",
+];
+
+export const TIMING_CYCLES = ["Every 2 days", "Every 3 days", "Weekly", "Every 10 days"];
+
+export const bestTouchpoint = (c: CustomerData) => c.aff[0]![0];
 export const formatCurrency = (n: number) => "$" + n.toLocaleString();
