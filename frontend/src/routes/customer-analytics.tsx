@@ -46,7 +46,6 @@ function CustomerPortfolioAnalytics() {
 
   const fullRepayCount = customers.filter((c) => c.repaymentType === "Full Repayment").length;
   const partialRepayCount = customers.filter((c) => c.repaymentType === "Partial Repayment").length;
-  const pendingRepayCount = customers.filter((c) => c.repaymentType === "Pending Repayment").length;
 
   const topTouchpointEntry = Object.entries(nb).sort((a, b) => b[1] - a[1])[0];
   const topTouchpoint = topTouchpointEntry ? topTouchpointEntry[0] : "Direct Phone";
@@ -55,10 +54,9 @@ function CustomerPortfolioAnalytics() {
     return TOUCHPOINT_METHODS.map((n) => {
       const a = customers
         .map((c) => c.ch.find((x) => x[0] === n))
-        .filter((x): x is [string, number, number] => Boolean(x));
+        .filter((x): x is [string, number] => Boolean(x));
       const avgSuccess = Math.round(a.reduce((s, x) => s + x[1], 0) / a.length);
-      const cost = a[0] ? a[0][2] : 0;
-      return { name: n, success: avgSuccess, cost };
+      return { name: n, success: avgSuccess };
     });
   }, [customers]);
 
@@ -106,7 +104,7 @@ function CustomerPortfolioAnalytics() {
           </h2>
           <p className="mt-1 text-xs text-muted-foreground">
             Frontline recommendations powered by Customer Engagement, Repayment Behavior, and
-            Post-Due Outreach Tracking models.
+            Post-Due Outreach Tracking.
           </p>
 
           <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -137,14 +135,12 @@ function CustomerPortfolioAnalytics() {
           </div>
         </div>
 
-        {/* 3 MODELS ROW */}
+        {/* 3 CORE SECTIONS ROW */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-          {/* Card 1: Engagement Model · Suggested Templates */}
+          {/* Card 1: Suggested Templates */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Engagement Model · Suggested Templates
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Suggested Templates</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Recommended messaging template by customer responsiveness
               </p>
@@ -187,12 +183,10 @@ function CustomerPortfolioAnalytics() {
             </div>
           </div>
 
-          {/* Card 2: Payment Model · Repayment Behavior */}
+          {/* Card 2: Repayment Behavior */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Payment Model · Repayment Behavior
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Repayment Behavior</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Turnaround time & partial vs full settlement breakdown
               </p>
@@ -243,25 +237,23 @@ function CustomerPortfolioAnalytics() {
             </div>
           </div>
 
-          {/* Card 3: Outreach Model · Contact Method */}
+          {/* Card 3: Contact Method */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Outreach Model · Contact Method
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Contact Method</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Post-due date touches & method success rate
               </p>
 
               {/* Bar graph */}
-              <div className="flex items-end gap-3 h-28 my-3 pb-2 border-b">
+              <div className="flex items-end gap-4 h-28 my-3 pb-2 border-b">
                 {touchMethods.map(({ name, success }) => (
                   <div key={name} className="flex-1 flex flex-col items-center gap-1 text-[11px]">
                     <div
                       className="w-full rounded-t-md bg-primary transition-all duration-300"
                       style={{ height: `${success * 1.05}px` }}
                     />
-                    <span className="text-muted-foreground truncate max-w-[55px] text-[10px]">
+                    <span className="text-muted-foreground truncate max-w-[70px] text-[10px]">
                       {name}
                     </span>
                     <span className="font-bold text-foreground text-xs">{success}%</span>
@@ -275,11 +267,11 @@ function CustomerPortfolioAnalytics() {
                 <span>Avg follow-ups post due-date</span>
                 <span className="font-bold text-foreground">{avgTouches} touches</span>
               </div>
-              {touchMethods.map(({ name, cost }) => (
+              {touchMethods.map(({ name }) => (
                 <div key={name} className="flex justify-between">
                   <span className="text-muted-foreground">{name}</span>
                   <span className="font-bold text-foreground">
-                    {nb[name] || 0} best · ${cost}/touch
+                    {nb[name] || 0} best recommended
                   </span>
                 </div>
               ))}

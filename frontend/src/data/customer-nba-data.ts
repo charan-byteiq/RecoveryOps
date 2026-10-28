@@ -8,7 +8,7 @@ export interface CustomerData {
   risk: string;
   ptp: string;
   reach: number;
-  ch: [string, number, number][]; // [touchpointMethod, successRate, costPerTouch]
+  ch: [string, number][]; // [touchpointMethod, successRate]
   aff: [string, number][]; // [touchpointMethod, affinityScore]
   pri: number;
   tier: "High" | "Medium" | "Low";
@@ -41,27 +41,24 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
 
   const reach = Math.max(10, Math.round(70 - dpd * 0.8 + (i % 3) * 6));
   const ph = Math.max(15, Math.round(reach + 18 - (i % 4) * 3));
-  const sms = Math.min(90, Math.round(reach * 1.1 + 14 - (i % 3) * 4));
   const em = Math.max(8, Math.round(reach * 0.5 + (i % 5)));
   const fv = dpd >= 30 ? 85 : null;
 
-  const ch: [string, number, number][] = [
-    ["Direct Phone", ph, 4.5],
-    ["SMS Alert", sms, 0.8],
-    ["Digital Mail", em, 0.3],
+  const ch: [string, number][] = [
+    ["Direct Phone", ph],
+    ["Digital Mail", em],
   ];
-  if (fv) ch.push(["Field Visit", fv, 32]);
+  if (fv) ch.push(["Field Visit", fv]);
 
   const aff: [string, number][] = ch
     .map(
-      ([n, s, c]) =>
+      ([n, s]) =>
         [
           n,
           Math.round(
             s * 0.7 +
               (n === "Field Visit" ? (dpd - 30) * 0.5 : 0) +
-              (n === "SMS Alert" ? 4 : 0) -
-              c / 4,
+              (n === "Direct Phone" ? 4 : 0),
           ),
         ] as [string, number],
     )
@@ -145,7 +142,7 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
 
 CUSTOMERS.sort((a, b) => b.pri - a.pri);
 
-export const TOUCHPOINT_METHODS = ["Direct Phone", "SMS Alert", "Digital Mail", "Field Visit"];
+export const TOUCHPOINT_METHODS = ["Direct Phone", "Digital Mail", "Field Visit"];
 
 export const TEMPLATES = [
   "Settlement Offer Template",

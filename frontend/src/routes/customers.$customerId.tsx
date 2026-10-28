@@ -50,7 +50,7 @@ function CustomerDetailView() {
       tone: "green",
     },
     {
-      title: `Follow-up via ${c.aff[1] ? c.aff[1][0] : "SMS Alert"}`,
+      title: `Follow-up via ${c.aff[1] ? c.aff[1][0] : "Digital Mail"}`,
       category: "Outreach History",
       time: `${c.last + 7}d ago`,
       status: "Delivered",
@@ -59,7 +59,7 @@ function CustomerDetailView() {
   ]);
 
   const bTouch = bestTouchpoint(c);
-  const fallbackTouch = c.aff[1] ? c.aff[1][0] : "SMS Alert";
+  const fallbackTouch = c.aff[1] ? c.aff[1][0] : "Digital Mail";
 
   const wk = [
     Math.ceil(c.touches / 3),
@@ -164,14 +164,12 @@ function CustomerDetailView() {
           </div>
         </div>
 
-        {/* 3 MODEL DETAIL CARDS */}
+        {/* 3 CORE DETAIL CARDS */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
-          {/* 1. Engagement Model · Suggested Template */}
+          {/* 1. Suggested Templates */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Engagement Model · Suggested Template
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Suggested Templates</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Recommended template category & operational objective
               </p>
@@ -205,12 +203,10 @@ function CustomerDetailView() {
             </div>
           </div>
 
-          {/* 2. Payment Model · Repayment Behavior */}
+          {/* 2. Repayment Behavior */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Payment Model · Repayment Behavior
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Repayment Behavior</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Turnaround time, recency & fulfillment pattern
               </p>
@@ -248,12 +244,10 @@ function CustomerDetailView() {
             </div>
           </div>
 
-          {/* 3. Outreach Model · Contact Method */}
+          {/* 3. Contact Method */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">
-                Outreach Model · Contact Method
-              </h3>
+              <h3 className="text-sm font-bold text-foreground">Contact Method</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Contact method affinity & post-due activity
               </p>
@@ -372,7 +366,7 @@ function CustomerDetailView() {
           <div className="bg-card text-foreground p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Suggested Template · Engagement
+                Suggested Template
               </div>
               <p className="mt-1 text-xs">
                 <b className="text-foreground">{c.content[0]}</b>
@@ -383,7 +377,7 @@ function CustomerDetailView() {
 
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Contact Method · Outreach
+                Contact Method
               </div>
               <p className="mt-1 text-xs">
                 <b className="text-foreground">{bTouch}</b>
@@ -394,7 +388,7 @@ function CustomerDetailView() {
 
             <div>
               <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Follow-up Timing · Repayment
+                Follow-up Timing
               </div>
               <p className="mt-1 text-xs">
                 <b className="text-foreground">{c.cad[0]}</b>
