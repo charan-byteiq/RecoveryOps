@@ -150,7 +150,7 @@ function CustomerDetailView() {
               </div>
               <div>
                 <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Best Contact Method
+                  Communication Preferences
                 </div>
                 <div className="mt-0.5 text-xl font-bold text-primary">{bTouch}</div>
               </div>
@@ -244,12 +244,12 @@ function CustomerDetailView() {
             </div>
           </div>
 
-          {/* 3. Contact Method */}
+          {/* 3. Communication Preferences */}
           <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Contact Method</h3>
+              <h3 className="text-sm font-bold text-foreground">Communication Preferences</h3>
               <p className="text-xs text-muted-foreground mb-4">
-                Contact method affinity & post-due activity
+                Preference affinity & post-due activity
               </p>
 
               <div className="space-y-2.5">
@@ -288,158 +288,189 @@ function CustomerDetailView() {
           </div>
         </div>
 
-        {/* 2 COLUMN MID ROW: Outreach attempts post-due date & Why this action */}
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-          {/* Card 4: Post-due date outreach and repayments */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-foreground">
-              Post-due date outreach and repayments
-            </h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Weekly touchpoints occurred post due-date up to current date ({c.touches} total)
-            </p>
+        {/* Card 4: Post-due date outreach and repayments (Line Chart) */}
+        <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">
+                Post-due date outreach and repayments
+              </h3>
+              <p className="text-xs text-muted-foreground mb-2">
+                Weekly touchpoints occurred post due-date up to current date ({c.touches} total)
+              </p>
 
-            <div className="flex items-end gap-4 h-28 my-3 pb-2 border-b">
-              {wk.map((v, i) => (
-                <div key={i} className="flex-1 flex flex-col items-center gap-1 text-[11px]">
-                  <div
-                    className="w-full rounded-t-md bg-primary transition-all duration-300"
-                    style={{ height: `${(v / maxWk) * 80}px` }}
-                  />
-                  <span className="text-muted-foreground text-[10px]">Week {i + 1}</span>
-                  <span className="font-semibold text-foreground text-[11px] text-center">
-                    {v} touches
-                    {pw[i] ? " · paid" : ""}
-                  </span>
+              {/* Line chart container aligned directly with 4 columns */}
+              <div className="relative mt-2 pt-2">
+                {/* SVG Line connecting centers of the 4 columns */}
+                <div className="relative h-28 w-full">
+                  {(() => {
+                    const maxY = Math.max(...wk, 4);
+                    // 4 columns: centers are at 12.5%, 37.5%, 62.5%, 87.5%
+                    const xPercents = [12.5, 37.5, 62.5, 87.5];
+                    const pts = wk.map((v, i) => {
+                      const x = xPercents[i]!;
+                      // Height normalized within 100px viewBox
+                      const y = 82 - (v / maxY) * 60;
+                      return { x, y, v, paid: Boolean(pw[i]) };
+                    });
+
+                    const lineD = pts.map((p, i) => `${i === 0 ? "M" : "L"} ${p.x} ${p.y}`).join(" ");
+                    const areaD = `${lineD} L ${pts[pts.length - 1]!.x} 94 L ${pts[0]!.x} 94 Z`;
+
+                    return (
+                      <svg
+                        viewBox="0 0 100 100"
+                        preserveAspectRatio="none"
+                        className="w-full h-full overflow-visible"
+                      >
+                        <defs>
+                          <linearGradient id="outreachLineGrad" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="0%" stopColor="#2563eb" stopOpacity="0.22" />
+                            <stop offset="100%" stopColor="#2563eb" stopOpacity="0.0" />
+                          </linearGradient>
+                        </defs>
+
+                        {/* Fill */}
+                        <path d={areaD} fill="url(#outreachLineGrad)" />
+
+                        {/* Stroke */}
+                        <path
+                          d={lineD}
+                          fill="none"
+                          stroke="#2563eb"
+                          strokeWidth="2.5"
+                          vectorEffect="non-scaling-stroke"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                        />
+                      </svg>
+                    );
+                  })()}
+
+                  {/* HTML Overlay Nodes for perfect non-distorted circles & labels aligned with column centers */}
+                  <div className="absolute inset-0 grid grid-cols-4 pointer-events-none">
+                    {wk.map((v, i) => {
+                      const maxY = Math.max(...wk, 4);
+                      const topPercent = 82 - (v / maxY) * 60;
+                      return (
+                        <div key={i} className="relative flex flex-col items-center">
+                          <div
+                            className="absolute flex flex-col items-center -translate-y-1/2"
+                            style={{ top: `${topPercent}%` }}
+                          >
+                            <span className="text-[12px] font-extrabold text-foreground leading-none mb-1">
+                              {v}
+                            </span>
+                            <span className="size-3.5 rounded-full border-2 border-primary bg-card shadow-xs" />
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
-              ))}
-            </div>
-          </div>
 
-          {/* Card 5: Why this action */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-foreground">Why this action</h3>
-            <p className="text-xs text-muted-foreground mb-4">Signals behind the recommendation</p>
-
-            <div className="space-y-2.5 text-xs">
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
-                Repayment coverage is <b>{c.cov}%</b> ({c.repaymentType.toLowerCase()}), with{" "}
-                <b>{c.daysToRepay} days</b> turnaround time to repay.
-              </div>
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
-                <b>{bTouch}</b> demonstrates the highest affinity score (<b>{c.aff[0]![1]}</b>) for
-                this borrower.
-              </div>
-              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
-                {c.reach < 40
-                  ? `Response rate is low (${c.reach}%), so a direct ${bTouch.toLowerCase()} approach with the ${c.content[0]} is prioritized over automated reminders.`
-                  : `Customer shows responsive engagement (${c.reach}%), making the ${c.content[0]} optimal for fast resolution.`}
+                {/* Bottom summary strip - 4 columns precisely under each node */}
+                <div className="mt-4 grid grid-cols-4 border-t pt-3 text-center">
+                  {wk.map((v, i) => (
+                    <div key={i} className="flex flex-col items-center">
+                      <span className="text-[11px] font-medium text-muted-foreground">Week {i + 1}</span>
+                      <span className="text-xs font-bold text-foreground mt-0.5">
+                        {v} touches
+                      </span>
+                      {pw[i] ? (
+                        <span className="inline-block mt-0.5 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[9.5px] font-semibold text-emerald-600 dark:text-emerald-400">
+                          ● paid
+                        </span>
+                      ) : null}
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
-          </div>
         </div>
 
-        {/* HERO NBA PRESCRIPTION CARD */}
-        <div className="rounded-2xl overflow-hidden border border-primary/40 bg-gradient-to-br from-primary to-blue-800 text-primary-foreground shadow-md">
-          {/* Header */}
-          <div className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        {/* 2 COLUMN BOTTOM ROW: Why this action (Signals) & Activity Timeline */}
+        <div className="grid gap-4 grid-cols-1 lg:grid-cols-12">
+          {/* Card 5: Why this action (Left 5 cols) */}
+          <div className="lg:col-span-5 rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <span className="inline-block rounded-md bg-white/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase">
-                Next Best Action · Prescribed
-              </span>
-              <h2 className="mt-2 text-2xl font-bold tracking-tight">
-                {c.content[0]} via {bTouch}
-              </h2>
-              <p className="mt-0.5 text-xs text-white/85">
-                Timing: {c.cad[0]} · Optimal window {c.rsp}
-              </p>
+              <h3 className="text-sm font-bold text-foreground">Why this action</h3>
+              <p className="text-xs text-muted-foreground mb-3">Signals behind the recommendation</p>
+
+              <div className="space-y-2.5 text-xs">
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground leading-relaxed">
+                  Repayment coverage is <b>{c.cov}%</b> ({c.repaymentType.toLowerCase()}), with{" "}
+                  <b>{c.daysToRepay} days</b> turnaround time to repay.
+                </div>
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground leading-relaxed">
+                  <b>{bTouch}</b> demonstrates the highest affinity score (<b>{c.aff[0]![1]}</b>) for
+                  this borrower.
+                </div>
+                <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground leading-relaxed">
+                  {c.reach < 40
+                    ? `Response rate is low (${c.reach}%), so a direct ${bTouch.toLowerCase()} approach with the ${c.content[0]} is prioritized over automated reminders.`
+                    : `Customer shows responsive engagement (${c.reach}%), making the ${c.content[0]} optimal for fast resolution.`}
+                </div>
+              </div>
             </div>
-            <button
-              onClick={() => setDrawerOpen(true)}
-              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary shadow-sm hover:bg-white/95 transition shrink-0"
-            >
-              <Phone className="size-3.5" /> Record Outcome
-            </button>
+
+            <div className="mt-4 pt-3 border-t text-[11px] text-muted-foreground flex justify-between items-center">
+              <span>Primary Outreach Method:</span>
+              <span className="font-bold text-primary">{bTouch}</span>
+            </div>
           </div>
 
-          {/* Body Cards */}
-          <div className="bg-card text-foreground p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+          {/* Card 6: Activity Timeline (Right 7 cols) */}
+          <div className="lg:col-span-7 rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Suggested Template
-              </div>
-              <p className="mt-1 text-xs">
-                <b className="text-foreground">{c.content[0]}</b>
-                <br />
-                <span className="text-muted-foreground">{c.content[1]}</span>
-              </p>
-            </div>
-
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Contact Method
-              </div>
-              <p className="mt-1 text-xs">
-                <b className="text-foreground">{bTouch}</b>
-                <br />
-                <span className="text-muted-foreground">Alternative touch: {fallbackTouch}</span>
-              </p>
-            </div>
-
-            <div>
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Follow-up Timing
-              </div>
-              <p className="mt-1 text-xs">
-                <b className="text-foreground">{c.cad[0]}</b>
-                <br />
-                <span className="text-muted-foreground">
-                  Review again after {c.cad[1].toLowerCase()}
+              <div className="flex items-center justify-between gap-2 flex-wrap mb-3">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Activity timeline</h3>
+                  <p className="text-xs text-muted-foreground">
+                    Recent outreach, template delivery and repayment events
+                  </p>
+                </div>
+                <span className="rounded-full bg-muted px-2.5 py-0.5 text-[11px] font-semibold text-muted-foreground">
+                  {timelineList.length} events logged
                 </span>
-              </p>
-            </div>
-
-            <div className="md:col-span-3 border-t pt-4 flex flex-wrap justify-end gap-3">
-              <button
-                onClick={() =>
-                  toast.info("Alternative contact method selected for operational follow-up.")
-                }
-                className="rounded-xl border border-border/80 bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition"
-              >
-                Switch Contact Method
-              </button>
-              <button
-                onClick={() => toast.success(`Action approved for ${c.name}`)}
-                className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition shadow-xs"
-              >
-                Approve Action
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* ACTIVITY TIMELINE CARD */}
-        <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <h3 className="text-sm font-bold text-foreground">Activity timeline</h3>
-          <p className="text-xs text-muted-foreground mb-4">
-            Recent outreach, template delivery and repayment events
-          </p>
-
-          <div className="border-l-2 border-border/80 ml-3 pl-4 space-y-3">
-            {timelineList.map((item, i) => (
-              <div key={i} className="rounded-xl border border-border/60 bg-muted/20 p-3 text-xs">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="font-bold text-foreground">{item.title}</span>
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
-                    {item.category}
-                  </span>
-                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                    {item.status}
-                  </span>
-                </div>
-                <div className="text-[11px] text-muted-foreground mt-1">{item.time}</div>
               </div>
-            ))}
+
+              {/* Vertical timeline */}
+              <div className="relative border-l-2 border-border/80 ml-2.5 pl-4 space-y-2.5">
+                {timelineList.map((item, i) => (
+                  <div
+                    key={i}
+                    className="relative rounded-xl border border-border/60 bg-muted/20 p-3 text-xs transition hover:bg-muted/30"
+                  >
+                    {/* Timeline bullet dot */}
+                    <span className="absolute -left-[23px] top-4 size-2.5 rounded-full border-2 border-card bg-primary" />
+
+                    <div className="flex items-start justify-between gap-2 flex-wrap">
+                      <div className="font-bold text-foreground">{item.title}</div>
+                      <span className="text-[11px] text-muted-foreground shrink-0">{item.time}</span>
+                    </div>
+
+                    <div className="mt-1.5 flex items-center gap-1.5 flex-wrap">
+                      <span className="rounded-md bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                        {item.category}
+                      </span>
+                      <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                        {item.status}
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Right Record Outcome Action */}
+            <div className="mt-4 border-t pt-3 flex justify-end">
+              <button
+                onClick={() => setDrawerOpen(true)}
+                className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground shadow-sm hover:bg-primary/90 transition"
+              >
+                <Phone className="size-3.5" /> Record Outcome
+              </button>
+            </div>
           </div>
         </div>
       </div>

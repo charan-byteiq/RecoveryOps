@@ -61,14 +61,16 @@ function CustomerPortfolioAnalytics() {
   }, [customers]);
 
   const combo = useMemo(() => {
-    const map: Record<string, number> = {};
+    const map: Record<string, { n: number; High: number; Medium: number; Low: number }> = {};
     customers.forEach((c) => {
       const k = `${c.content[0]} → ${bestTouchpoint(c)} → ${c.cad[0]}`;
-      map[k] = (map[k] || 0) + 1;
+      if (!map[k]) map[k] = { n: 0, High: 0, Medium: 0, Low: 0 };
+      map[k].n += 1;
+      map[k][c.tier as "High" | "Medium" | "Low"] += 1;
     });
     return Object.entries(map)
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 5);
+      .sort((a, b) => b[1].n - a[1].n)
+      .slice(0, 6);
   }, [customers]);
 
   // Donut chart calculation
@@ -97,40 +99,224 @@ function CustomerPortfolioAnalytics() {
       }
     >
       <div className="mx-auto max-w-[1280px] space-y-4">
-        {/* HERO CARD */}
-        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
-          <h2 className="text-xl font-bold tracking-tight text-foreground">
-            Optimized Template Selection, Contact Method & Follow-up Timing
-          </h2>
-          <p className="mt-1 text-xs text-muted-foreground">
-            Frontline recommendations powered by Customer Engagement, Repayment Behavior, and
-            Post-Due Outreach Tracking.
-          </p>
+        {/* HERO CARD - CUSTOMER INTELLIGENCE */}
+        <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-gradient-to-br from-card via-card to-muted/20 p-6 shadow-sm">
+          {/* Subtle background glow */}
+          <div className="pointer-events-none absolute -top-12 -right-12 h-44 w-44 rounded-full bg-primary/10 blur-3xl" />
 
-          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+          <div>
+            <h2 className="text-2xl font-extrabold tracking-tight text-foreground">
+              Customer Intelligence
+            </h2>
+            <p className="mt-1 text-xs text-muted-foreground max-w-2xl leading-relaxed">
+              Data driven insights to help prioritize customers ,improve repayment outcomes and guide recovery decisions.
+            </p>
+          </div>
+
+          {/* METRIC TILES */}
+          <div className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <div className="rounded-xl border border-border/70 bg-card/80 p-3.5 backdrop-blur-xs transition hover:border-border">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
                 Customers in Scope
               </div>
-              <div className="mt-1 text-3xl font-extrabold text-primary">{customers.length}</div>
+              <div className="mt-1.5 text-3xl font-extrabold text-primary">{customers.length}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Active borrower queue</div>
             </div>
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+
+            <div className="rounded-xl border border-border/70 bg-card/80 p-3.5 backdrop-blur-xs transition hover:border-border">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
                 High Priority
               </div>
-              <div className="mt-1 text-3xl font-extrabold text-destructive">{hi}</div>
+              <div className="mt-1.5 text-3xl font-extrabold text-destructive">{hi}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">
+                {Math.round((hi / customers.length) * 100)}% requiring immediate action
+              </div>
             </div>
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+
+            <div className="rounded-xl border border-border/70 bg-card/80 p-3.5 backdrop-blur-xs transition hover:border-border">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
                 Avg Repayment Ratio
               </div>
-              <div className="mt-1 text-3xl font-extrabold text-foreground">{avgCov}%</div>
+              <div className="mt-1.5 text-3xl font-extrabold text-foreground">{avgCov}%</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Delinquency recovery coverage</div>
             </div>
-            <div>
-              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                Top Contact Method
+
+            <div className="rounded-xl border border-border/70 bg-card/80 p-3.5 backdrop-blur-xs transition hover:border-border">
+              <div className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                Top Communication Preference
               </div>
-              <div className="mt-1 text-3xl font-extrabold text-foreground">{topTouchpoint}</div>
+              <div className="mt-1.5 text-2xl font-extrabold text-foreground truncate">{topTouchpoint}</div>
+              <div className="mt-1 text-[11px] text-muted-foreground">Highest conversion method</div>
+            </div>
+          </div>
+        </div>
+
+        {/* SUGGESTED ACTIONS HERO / PLAYBOOK ROW */}
+        <div className="rounded-2xl border-2 border-fuchsia-500/40 bg-card overflow-hidden shadow-xl ring-1 ring-fuchsia-500/20">
+          <div
+            className="flex flex-wrap items-center justify-between gap-3 text-white p-5 border-b-2 border-fuchsia-300/40 shadow-sm"
+            style={{
+              background: "linear-gradient(90deg, #7828c8 0%, #8b2fc9 35%, #a832c7 70%, #c432b8 100%)",
+            }}
+          >
+            <div>
+              <h3 className="text-xl font-extrabold tracking-tight text-white">Suggested Actions</h3>
+              <p className="mt-0.5 text-xs text-fuchsia-100/90 font-medium">
+                Suggested Template → Communication Preference → Follow-up Timing
+              </p>
+            </div>
+            <Link
+              to="/worklist"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white px-4 py-2 text-xs font-bold text-[#7828c8] shadow-sm hover:bg-fuchsia-50 active:scale-95 transition"
+            >
+              Open the priority worklist →
+            </Link>
+          </div>
+
+          <div className="p-5 space-y-4">
+            {/* Priority scoring banner with AI gradient accent */}
+            <div className="rounded-xl border-2 border-transparent bg-gradient-to-r from-violet-600/10 via-pink-600/10 to-amber-500/10 p-4 shadow-sm [background-clip:padding-box,border-box]">
+              <div className="flex flex-wrap items-baseline justify-between gap-2 mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold bg-gradient-to-r from-violet-600 via-pink-600 to-amber-500 bg-clip-text text-transparent">
+                    Priority scoring
+                  </span>
+                </div>
+                <span className="text-xs text-muted-foreground">
+                  Combined signal from engagement, repayment, and outreach behavior
+                </span>
+              </div>
+              <p className="text-xs text-foreground mb-3">
+                <b className="bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent font-bold">
+                  {hi} of {customers.length} customers ({Math.round((hi / customers.length) * 100)}%)
+                </b>{" "}
+                are high priority and should be worked first.
+              </p>
+
+              {/* Stacked Priority bar */}
+              <div className="flex h-3.5 w-full rounded-full overflow-hidden bg-muted">
+                <div style={{ width: `${(hi / customers.length) * 100}%` }} className="bg-destructive" />
+                <div style={{ width: `${(me / customers.length) * 100}%` }} className="bg-amber-500" />
+                <div style={{ width: `${(lo / customers.length) * 100}%` }} className="bg-emerald-500" />
+              </div>
+
+              {/* Legend chips */}
+              <div className="mt-3 flex flex-wrap gap-2.5 text-xs">
+                <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-1.5">
+                  <span className="inline-flex items-center rounded-full bg-destructive/15 px-2 py-0.5 text-[11px] font-semibold text-destructive">
+                    High Priority
+                  </span>
+                  <b className="text-sm font-bold text-foreground">{hi}</b>
+                  <span className="text-muted-foreground text-[11px]">
+                    {Math.round((hi / customers.length) * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-1.5">
+                  <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2 py-0.5 text-[11px] font-semibold text-amber-600 dark:text-amber-400">
+                    Medium Priority
+                  </span>
+                  <b className="text-sm font-bold text-foreground">{me}</b>
+                  <span className="text-muted-foreground text-[11px]">
+                    {Math.round((me / customers.length) * 100)}%
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 rounded-lg border border-border/80 bg-card px-3 py-1.5">
+                  <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2 py-0.5 text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    Low Priority
+                  </span>
+                  <b className="text-sm font-bold text-foreground">{lo}</b>
+                  <span className="text-muted-foreground text-[11px]">
+                    {Math.round((lo / customers.length) * 100)}%
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Play cards */}
+            <div className="grid gap-3 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+              {combo.map(([k, o], idx) => {
+                const parts = k.split(" → ");
+                const t = parts[0] || "";
+                const c = parts[1] || "";
+                const f = parts[2] || "";
+                return (
+                  <div
+                    key={k}
+                    className={`flex items-start gap-3.5 rounded-xl border p-4 transition-all hover:-translate-y-0.5 hover:shadow-md ${
+                      idx === 0
+                        ? "border-[#a832c7]/60 bg-[#a832c7]/5 shadow-xs ring-1 ring-[#a832c7]/20"
+                        : "border-border/80 bg-card"
+                    }`}
+                  >
+                    <div
+                      className={`shrink-0 min-w-[72px] rounded-xl px-2 py-3 text-center flex flex-col items-center justify-center ${
+                        idx === 0
+                          ? "text-white shadow-xs"
+                          : "bg-fuchsia-50 dark:bg-fuchsia-950/40 text-[#7828c8] dark:text-fuchsia-300 border border-fuchsia-200/50"
+                      }`}
+                      style={
+                        idx === 0
+                          ? { background: "linear-gradient(135deg, #7828c8 0%, #c432b8 100%)" }
+                          : undefined
+                      }
+                    >
+                      <b className="block text-2xl font-extrabold leading-none">{o.n}</b>
+                      <span className="text-[8px] font-bold uppercase tracking-wider opacity-90 mt-1 block whitespace-nowrap">
+                        Borrowers
+                      </span>
+                    </div>
+
+                    <div className="flex-1 min-w-0 space-y-1.5 text-xs">
+                      <div className="flex items-start gap-1.5">
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded bg-[#7828c8]/10 text-[9px] font-bold text-[#7828c8] mt-0.5">
+                          T
+                        </span>
+                        <div className="flex-1 font-semibold text-foreground leading-snug">
+                          {t}
+                          {idx === 0 && (
+                            <span
+                              className="ml-1.5 inline-block rounded-full px-2 py-0.2 text-[9px] font-extrabold text-white"
+                              style={{ background: "linear-gradient(90deg, #7828c8, #c432b8)" }}
+                            >
+                              TOP PLAY
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded bg-[#7828c8]/10 text-[9px] font-bold text-[#7828c8]">
+                          C
+                        </span>
+                        <span className="font-medium text-foreground/80">{c}</span>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <span className="flex size-4 shrink-0 items-center justify-center rounded bg-[#7828c8]/10 text-[9px] font-bold text-[#7828c8]">
+                          F
+                        </span>
+                        <span>{f}</span>
+                      </div>
+                      {/* Priority distribution tags */}
+                      <div className="flex gap-1.5 pt-1 flex-wrap">
+                        {o.High > 0 && (
+                          <span className="rounded bg-destructive/10 px-1.5 py-0.5 text-[10px] font-semibold text-destructive">
+                            High {o.High}
+                          </span>
+                        )}
+                        {o.Medium > 0 && (
+                          <span className="rounded bg-amber-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                            Medium {o.Medium}
+                          </span>
+                        )}
+                        {o.Low > 0 && (
+                          <span className="rounded bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                            Low {o.Low}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
             </div>
           </div>
         </div>
@@ -138,7 +324,7 @@ function CustomerPortfolioAnalytics() {
         {/* 3 CORE SECTIONS ROW */}
         <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
           {/* Card 1: Suggested Templates */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+          <div className="rounded-2xl border-t-4 border-t-primary border-x border-b border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
               <h3 className="text-sm font-bold text-foreground">Suggested Templates</h3>
               <p className="text-xs text-muted-foreground mb-4">
@@ -184,7 +370,7 @@ function CustomerPortfolioAnalytics() {
           </div>
 
           {/* Card 2: Repayment Behavior */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+          <div className="rounded-2xl border-t-4 border-t-emerald-500 border-x border-b border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
               <h3 className="text-sm font-bold text-foreground">Repayment Behavior</h3>
               <p className="text-xs text-muted-foreground mb-4">
@@ -237,26 +423,28 @@ function CustomerPortfolioAnalytics() {
             </div>
           </div>
 
-          {/* Card 3: Contact Method */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+          {/* Card 3: Communication Preferences */}
+          <div className="rounded-2xl border-t-4 border-t-amber-500 border-x border-b border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Contact Method</h3>
+              <h3 className="text-sm font-bold text-foreground">Communication Preferences</h3>
               <p className="text-xs text-muted-foreground mb-4">
                 Post-due date touches & method success rate
               </p>
 
               {/* Bar graph */}
-              <div className="flex items-end gap-4 h-28 my-3 pb-2 border-b">
+              <div className="flex items-end gap-3 h-32 pt-4 pb-2 border-b">
                 {touchMethods.map(({ name, success }) => (
-                  <div key={name} className="flex-1 flex flex-col items-center gap-1 text-[11px]">
-                    <div
-                      className="w-full rounded-t-md bg-primary transition-all duration-300"
-                      style={{ height: `${success * 1.05}px` }}
-                    />
-                    <span className="text-muted-foreground truncate max-w-[70px] text-[10px]">
+                  <div key={name} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 text-[11px]">
+                    <div className="w-full flex-1 flex items-end">
+                      <div
+                        className="w-full rounded-t-md bg-amber-500 transition-all duration-300"
+                        style={{ height: `${Math.round((success / 100) * 64)}px` }}
+                      />
+                    </div>
+                    <span className="text-muted-foreground truncate max-w-[80px] text-[10px]">
                       {name}
                     </span>
-                    <span className="font-bold text-foreground text-xs">{success}%</span>
+                    <span className="font-bold text-foreground text-xs leading-none">{success}%</span>
                   </div>
                 ))}
               </div>
@@ -273,75 +461,6 @@ function CustomerPortfolioAnalytics() {
                   <span className="font-bold text-foreground">
                     {nb[name] || 0} best recommended
                   </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        {/* 2 COLUMN BOTTOM ROW: Priority Scoring & Next Best Action Combinations */}
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
-          {/* Card 4: Unified Priority Scoring */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-foreground">Unified priority scoring</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Combined signal from engagement, repayment, and outreach behavior
-            </p>
-
-            <div className="flex items-center gap-6 flex-wrap">
-              <div
-                className="size-28 rounded-full shrink-0 shadow-inner"
-                style={{
-                  background: conicGradient,
-                  mask: "radial-gradient(circle 38px, transparent 98%, black)",
-                  WebkitMask: "radial-gradient(circle 38px, transparent 98%, black)",
-                }}
-              />
-              <div className="flex-1 min-w-[160px] space-y-2 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive">
-                    High Priority
-                  </span>
-                  <span className="font-bold text-foreground text-sm">{hi}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
-                    Medium Priority
-                  </span>
-                  <span className="font-bold text-foreground text-sm">{me}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
-                    Low Priority
-                  </span>
-                  <span className="font-bold text-foreground text-sm">{lo}</span>
-                </div>
-              </div>
-            </div>
-
-            <p className="mt-4 text-xs text-muted-foreground">
-              <Link to="/worklist" className="font-semibold text-primary hover:underline">
-                Open the priority worklist →
-              </Link>
-            </p>
-          </div>
-
-          {/* Card 5: Next best action combinations */}
-          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-            <h3 className="text-sm font-bold text-foreground">Next best action combinations</h3>
-            <p className="text-xs text-muted-foreground mb-4">
-              Suggested Template → Contact Method → Follow-up Timing
-            </p>
-
-            <div className="space-y-2.5">
-              {combo.map(([k, v]) => (
-                <div
-                  key={k}
-                  className="rounded-xl border border-border/60 bg-muted/20 px-3.5 py-2.5 text-xs"
-                >
-                  <b className="text-primary font-bold">{v}</b>{" "}
-                  <span className="text-muted-foreground">customers ·</span>{" "}
-                  <span className="font-medium text-foreground">{k}</span>
                 </div>
               ))}
             </div>

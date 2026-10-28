@@ -69,111 +69,156 @@ export function Worklist() {
       <div className="mx-auto max-w-[1280px] space-y-4">
         {/* TOP 4 STAT CARDS */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-violet-600 before:to-pink-600">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Active Queue
             </div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{customers.length}</div>
+            <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
+              {customers.length}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">Customers ranked by priority</p>
           </div>
-          <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-red-500 before:to-orange-500">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               High Priority
             </div>
-            <div className="mt-1 text-2xl font-bold text-destructive">{hiCount}</div>
+            <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
+              {hiCount}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">Act first</p>
           </div>
-          <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-amber-500 before:to-yellow-400">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Low Payment Coverage
             </div>
-            <div className="mt-1 text-2xl font-bold text-amber-600 dark:text-amber-400">
+            <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-amber-600 to-amber-500 bg-clip-text text-transparent">
               {lowCovCount}
             </div>
             <p className="text-xs text-muted-foreground mt-0.5">Coverage under 25%</p>
           </div>
-          <div className="rounded-2xl border border-border/80 bg-card p-4 shadow-xs">
+
+          <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-sky-500 before:to-violet-600">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Low Response
             </div>
-            <div className="mt-1 text-2xl font-bold text-foreground">{lowReachCount}</div>
+            <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-sky-500 to-violet-600 bg-clip-text text-transparent">
+              {lowReachCount}
+            </div>
             <p className="text-xs text-muted-foreground mt-0.5">Response rate under 40%</p>
           </div>
         </div>
 
         {/* MAIN WORKLIST TABLE CARD */}
-        <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
-          <h2 className="text-base font-bold text-foreground">Prioritised customer list</h2>
-          <p className="text-xs text-muted-foreground mt-0.5">
-            Suggested engagement template, contact method, and follow-up timing for each borrower.
-          </p>
-
-          {/* FILTER BARS */}
-          <div className="mt-4 flex flex-wrap items-center gap-3 border-y border-border/60 py-3 text-xs">
-            {/* Search Input */}
-            <input
-              type="text"
-              placeholder="Search customer name, ID or account"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="h-8 w-64 rounded-full border border-border/80 bg-muted/30 px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-primary focus:outline-none"
-            />
-
-            {/* Priority Filter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground text-xs font-medium">Priority</span>
-              {["All", "High", "Medium", "Low"].map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPriorityFilter(p)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    priorityFilter === p
-                      ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+        <div className="rounded-2xl border-t-4 border-t-violet-500 border-x border-b border-border/80 bg-card p-5 shadow-xs">
+          <div className="flex flex-wrap items-baseline justify-between gap-2">
+            <div>
+              <h2 className="text-lg font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
+                Prioritised customer list
+              </h2>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Suggested engagement template, communication preference, and follow-up timing for each borrower.
+              </p>
             </div>
-
-            {/* Contact Method Filter */}
-            <div className="flex items-center gap-1.5">
-              <span className="text-muted-foreground text-xs font-medium">Contact Method</span>
-              {["All", ...TOUCHPOINT_METHODS].map((c) => (
-                <button
-                  key={c}
-                  onClick={() => setTouchpointFilter(c)}
-                  className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                    touchpointFilter === c
-                      ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                      : "text-foreground hover:bg-muted"
-                  }`}
-                >
-                  {c}
-                </button>
-              ))}
+            <div className="text-xs text-muted-foreground">
+              Showing <b className="text-foreground">{filteredCustomers.length}</b> of {customers.length} customers
             </div>
           </div>
 
-          {/* Template Selection Filter */}
-          <div className="flex flex-wrap items-center gap-1.5 py-2 text-xs">
-            <span className="text-muted-foreground text-xs font-medium mr-1">
-              Suggested Template
-            </span>
-            {["All", ...TEMPLATES].map((m) => (
-              <button
-                key={m}
-                onClick={() => setTemplateFilter(m)}
-                className={`rounded-full px-2.5 py-1 text-xs font-medium transition ${
-                  templateFilter === m
-                    ? "bg-primary text-primary-foreground font-semibold shadow-2xs"
-                    : "text-foreground hover:bg-muted"
-                }`}
+          {/* FILTER PANEL */}
+          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs">
+            {/* Search Input */}
+            <div className="md:col-span-3">
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                Search
+              </label>
+              <input
+                type="text"
+                placeholder="Search customer name, ID or account"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="h-9 w-full rounded-xl border border-border/80 bg-card px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none"
+              />
+            </div>
+
+            {/* Priority Filter */}
+            <div>
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                1 · Priority
+              </label>
+              <div className="flex gap-1 rounded-xl border border-border/80 bg-card p-1">
+                {[
+                  { label: "All", count: customers.length, color: "" },
+                  { label: "High", count: hiCount, color: "bg-red-500" },
+                  { label: "Medium", count: customers.filter((c) => c.tier === "Medium").length, color: "bg-amber-500" },
+                  { label: "Low", count: customers.filter((c) => c.tier === "Low").length, color: "bg-emerald-500" },
+                ].map(({ label, count, color }) => (
+                  <button
+                    key={label}
+                    onClick={() => setPriorityFilter(label)}
+                    className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${
+                      priorityFilter === label
+                        ? "bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {color && <span className={`size-1.5 rounded-full ${color}`} />}
+                    {label}
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                        priorityFilter === label
+                          ? "bg-white/25 text-white"
+                          : "bg-muted text-muted-foreground"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Communication Preferences Filter */}
+            <div>
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                2 · Communication Preferences
+              </label>
+              <div className="flex gap-1 rounded-xl border border-border/80 bg-card p-1">
+                {["All", ...TOUCHPOINT_METHODS].map((c) => (
+                  <button
+                    key={c}
+                    onClick={() => setTouchpointFilter(c)}
+                    className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition text-center truncate ${
+                      touchpointFilter === c
+                        ? "bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs"
+                        : "text-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {c}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Template Selection Filter */}
+            <div>
+              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
+                3 · Suggested Template
+              </label>
+              <select
+                value={templateFilter}
+                onChange={(e) => setTemplateFilter(e.target.value)}
+                className="h-[38px] w-full rounded-xl border border-border/80 bg-card px-3 text-xs font-semibold text-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none cursor-pointer"
               >
-                {m}
-              </button>
-            ))}
+                <option value="All">All templates</option>
+                {TEMPLATES.map((m) => (
+                  <option key={m} value={m}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* TABLE */}
@@ -186,7 +231,7 @@ export function Worklist() {
                   <th className="px-4 py-2.5 font-semibold">Priority</th>
                   <th className="px-4 py-2.5 font-semibold">Suggested Template</th>
                   <th className="px-4 py-2.5 font-semibold">Follow-up Timing</th>
-                  <th className="px-4 py-2.5 font-semibold">Contact Method</th>
+                  <th className="px-4 py-2.5 font-semibold">Communication Preferences</th>
                   <th className="px-4 py-2.5 font-semibold">Repayment Status</th>
                   <th className="px-4 py-2.5 text-right font-semibold">Action</th>
                 </tr>
