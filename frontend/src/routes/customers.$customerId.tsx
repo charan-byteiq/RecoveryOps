@@ -256,6 +256,7 @@ function CustomerDetailView() {
                 {c.aff.map(([name, score], idx) => {
                   const chObj = c.ch.find((x) => x[0] === name);
                   const successRate = chObj ? chObj[1] : 0;
+                  const attInfo = c.methodAttempts[name];
                   return (
                     <div key={name}>
                       <div className="flex justify-between text-xs mb-1">
@@ -275,15 +276,31 @@ function CustomerDetailView() {
                           style={{ width: `${Math.min(100, score)}%` }}
                         />
                       </div>
+                      {attInfo && (
+                        <div className="flex justify-between text-[10.5px] text-muted-foreground mt-0.5">
+                          <span>{attInfo.attempts} attempts post due-date</span>
+                          <span className="font-medium text-foreground/80">{attInfo.success} connected</span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
               </div>
             </div>
 
-            <div className="mt-4 border-t pt-2.5 flex justify-between text-xs">
-              <span className="text-muted-foreground">Optimal response window</span>
-              <span className="font-semibold text-foreground">{c.rsp}</span>
+            <div className="mt-4 border-t pt-2.5 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Last outreach attempt</span>
+                <span className="font-semibold text-foreground">
+                  {c.touches === 0
+                    ? "No outreach post due-date"
+                    : `${c.daysSinceOutreach}d ago via ${c.lastOutreachMethod}`}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Optimal response window</span>
+                <span className="font-semibold text-foreground">{c.rsp}</span>
+              </div>
             </div>
           </div>
         </div>

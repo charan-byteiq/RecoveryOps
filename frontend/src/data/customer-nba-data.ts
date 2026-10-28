@@ -15,6 +15,9 @@ export interface CustomerData {
   content: [string, string]; // [templateName, templateObjective]
   cad: [string, string]; // [followUpTiming, scheduleInterval]
   touches: number; // total outreach attempts post due-date to current date
+  daysSinceOutreach: number; // days since most recent outreach attempt
+  lastOutreachMethod: string; // method used in most recent attempt
+  methodAttempts: Record<string, { attempts: number; success: number }>; // breakdown of attempts by method
   cov: number; // repayment ratio / coverage %
   repaymentType: "Full Repayment" | "Partial Repayment" | "Pending Repayment";
   daysToRepay: number; // turnaround time customer takes to repay
@@ -105,7 +108,26 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
           : ["Every 10 days", "Bi-weekly monitoring cycle"];
 
   // Outreach tracking post due-date up to current date
-  const touches = Math.max(2, Math.round(dpd / 7) + (i % 5) + (dpd > 30 ? 4 : 1));
+  // (C016 is simulated with 0 touches to capture "Zero Outreach" accounts)
+  const touches = i === 15 ? 0 : Math.max(1, Math.round(dpd / 7) + (i % 5) + (dpd > 30 ? 4 : 0));
+  const daysSinceOutreach = touches === 0 ? 0 : Math.max(1, Math.round((dpd % 7) + (i % 4)));
+  const lastOutreachMethod = touches === 0 ? "None" : aff[0]![0];
+
+  const methodAttempts: Record<string, { attempts: number; success: number }> = {};
+  if (touches === 0) {
+    ch.forEach(([n]) => {
+      methodAttempts[n] = { attempts: 0, success: 0 };
+    });
+  } else {
+    const phAtt = Math.max(1, Math.round(touches * 0.55));
+    const emAtt = Math.max(1, Math.round(touches * 0.35));
+    const fvAtt = fv ? Math.max(1, touches - phAtt - emAtt) : 0;
+    methodAttempts["Direct Phone"] = { attempts: phAtt, success: Math.min(phAtt, Math.round(phAtt * 0.6)) };
+    methodAttempts["Digital Mail"] = { attempts: emAtt, success: Math.min(emAtt, Math.round(emAtt * 0.4)) };
+    if (fv) {
+      methodAttempts["Field Visit"] = { attempts: Math.max(1, fvAtt), success: 1 };
+    }
+  }
 
   // Repayment behavior analysis
   const repaymentType: "Full Repayment" | "Partial Repayment" | "Pending Repayment" =
@@ -129,6 +151,9 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
     content,
     cad,
     touches,
+    daysSinceOutreach,
+    lastOutreachMethod,
+    methodAttempts,
     cov,
     repaymentType,
     daysToRepay,

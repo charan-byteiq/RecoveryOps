@@ -13,6 +13,7 @@ export function Worklist() {
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
   const [touchpointFilter, setTouchpointFilter] = useState<string>("All");
   const [templateFilter, setTemplateFilter] = useState<string>("All");
+  const [outreachStatusFilter, setOutreachStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   const customers = CUSTOMERS;
@@ -22,16 +23,20 @@ export function Worklist() {
       const matchP = priorityFilter === "All" || c.tier === priorityFilter;
       const matchC = touchpointFilter === "All" || bestTouchpoint(c) === touchpointFilter;
       const matchM = templateFilter === "All" || c.content[0] === templateFilter;
+      const matchO =
+        outreachStatusFilter === "All" ||
+        (outreachStatusFilter === "Zero Outreach" ? c.touches === 0 : c.touches > 0);
       const matchQ =
         searchQuery === "" ||
         (c.name + c.id + c.acct).toLowerCase().includes(searchQuery.toLowerCase());
-      return matchP && matchC && matchM && matchQ;
+      return matchP && matchC && matchM && matchO && matchQ;
     });
-  }, [customers, priorityFilter, touchpointFilter, templateFilter, searchQuery]);
+  }, [customers, priorityFilter, touchpointFilter, templateFilter, outreachStatusFilter, searchQuery]);
 
   const hiCount = customers.filter((c) => c.tier === "High").length;
   const lowCovCount = customers.filter((c) => c.cov < 25).length;
   const lowReachCount = customers.filter((c) => c.reach < 40).length;
+  const zeroOutreachCount = customers.filter((c) => c.touches === 0).length;
 
   const getTierBadge = (c: CustomerData) => {
     if (c.tier === "High") {
@@ -219,6 +224,41 @@ export function Worklist() {
                 ))}
               </select>
             </div>
+
+            {/* Outreach Status Filter */}
+            <div className="md:col-span-3">
+              <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Post-due Outreach:
+                </span>
+                {[
+                  { label: "All", count: customers.length },
+                  { label: "Contacted", count: customers.length - zeroOutreachCount },
+                  { label: "Zero Outreach", count: zeroOutreachCount },
+                ].map(({ label, count }) => (
+                  <button
+                    key={label}
+                    onClick={() => setOutreachStatusFilter(label)}
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                      outreachStatusFilter === label
+                        ? "bg-primary text-primary-foreground shadow-2xs"
+                        : "border border-border/70 bg-card text-muted-foreground hover:bg-muted/50"
+                    }`}
+                  >
+                    {label}
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10px] ${
+                        outreachStatusFilter === label
+                          ? "bg-white/20 text-white"
+                          : "bg-muted text-foreground"
+                      }`}
+                    >
+                      {count}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* TABLE */}
@@ -269,7 +309,13 @@ export function Worklist() {
                       <td className="px-4 py-3">
                         <div className="font-medium text-foreground">{c.cad[0]}</div>
                         <div className="text-[11px] text-muted-foreground">
-                          {c.touches} touches post due-date
+                          {c.touches === 0 ? (
+                            <span className="font-semibold text-amber-600 dark:text-amber-400">
+                              No outreach post due-date
+                            </span>
+                          ) : (
+                            `${c.touches} touches · ${c.daysSinceOutreach}d ago`
+                          )}
                         </div>
                       </td>
                       <td className="px-4 py-3">

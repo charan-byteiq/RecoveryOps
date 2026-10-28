@@ -42,7 +42,15 @@ function CustomerPortfolioAnalytics() {
   const avgDaysToRepay = Math.round(
     customers.reduce((s, c) => s + c.daysToRepay, 0) / customers.length,
   );
-  const avgTouches = Math.round(customers.reduce((s, c) => s + c.touches, 0) / customers.length);
+  const contactedCustomers = customers.filter((c) => c.touches > 0);
+  const zeroOutreachCount = customers.filter((c) => c.touches === 0).length;
+  const contactedCount = contactedCustomers.length;
+  const avgTouches = Math.round(
+    contactedCustomers.reduce((s, c) => s + c.touches, 0) / (contactedCount || 1),
+  );
+  const avgDaysSinceOutreach = Math.round(
+    contactedCustomers.reduce((s, c) => s + c.daysSinceOutreach, 0) / (contactedCount || 1),
+  );
 
   const fullRepayCount = customers.filter((c) => c.repaymentType === "Full Repayment").length;
   const partialRepayCount = customers.filter((c) => c.repaymentType === "Partial Repayment").length;
@@ -56,7 +64,11 @@ function CustomerPortfolioAnalytics() {
         .map((c) => c.ch.find((x) => x[0] === n))
         .filter((x): x is [string, number] => Boolean(x));
       const avgSuccess = Math.round(a.reduce((s, x) => s + x[1], 0) / a.length);
-      return { name: n, success: avgSuccess };
+      const totalAttempts = customers.reduce(
+        (sum, c) => sum + (c.methodAttempts[n]?.attempts || 0),
+        0,
+      );
+      return { name: n, success: avgSuccess, attempts: totalAttempts };
     });
   }, [customers]);
 
@@ -426,40 +438,61 @@ function CustomerPortfolioAnalytics() {
           {/* Card 3: Communication Preferences */}
           <div className="rounded-2xl border-t-4 border-t-amber-500 border-x border-b border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
             <div>
-              <h3 className="text-sm font-bold text-foreground">Communication Preferences</h3>
-              <p className="text-xs text-muted-foreground mb-4">
-                Post-due date touches & method success rate
-              </p>
+              <div className="flex justify-between items-start gap-2">
+                <div>
+                  <h3 className="text-sm font-bold text-foreground">Communication Preferences</h3>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Post-due date touches & method success rate
+                  </p>
+                </div>
+                {zeroOutreachCount > 0 && (
+                  <span className="rounded-full bg-amber-500/15 px-2 py-0.5 text-[10px] font-semibold text-amber-600 dark:text-amber-400">
+                    {zeroOutreachCount} uncontacted
+                  </span>
+                )}
+              </div>
 
               {/* Bar graph */}
-              <div className="flex items-end gap-3 h-32 pt-4 pb-2 border-b">
-                {touchMethods.map(({ name, success }) => (
+              <div className="flex items-end gap-3 h-28 pt-2 pb-2 border-b">
+                {touchMethods.map(({ name, success, attempts }) => (
                   <div key={name} className="flex-1 flex flex-col items-center justify-end h-full gap-1.5 text-[11px]">
                     <div className="w-full flex-1 flex items-end">
                       <div
                         className="w-full rounded-t-md bg-amber-500 transition-all duration-300"
-                        style={{ height: `${Math.round((success / 100) * 64)}px` }}
+                        style={{ height: `${Math.round((success / 100) * 58)}px` }}
                       />
                     </div>
                     <span className="text-muted-foreground truncate max-w-[80px] text-[10px]">
                       {name}
                     </span>
-                    <span className="font-bold text-foreground text-xs leading-none">{success}%</span>
+                    <span className="font-bold text-foreground text-xs leading-none">
+                      {success}% <span className="text-[10px] font-normal text-muted-foreground">({attempts})</span>
+                    </span>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-1.5 text-xs">
+            <div className="mt-3 space-y-1.5 text-xs">
               <div className="flex justify-between text-muted-foreground pb-1 border-b">
                 <span>Avg follow-ups post due-date</span>
                 <span className="font-bold text-foreground">{avgTouches} touches</span>
               </div>
-              {touchMethods.map(({ name }) => (
+              <div className="flex justify-between text-muted-foreground pb-1 border-b">
+                <span>Avg days since last outreach</span>
+                <span className="font-bold text-foreground">{avgDaysSinceOutreach} days</span>
+              </div>
+              <div className="flex justify-between text-muted-foreground pb-1 border-b">
+                <span>Accounts contacted after due-date</span>
+                <span className="font-bold text-foreground">
+                  {contactedCount}/{customers.length} ({Math.round((contactedCount / customers.length) * 100)}%)
+                </span>
+              </div>
+              {touchMethods.map(({ name, attempts }) => (
                 <div key={name} className="flex justify-between">
                   <span className="text-muted-foreground">{name}</span>
                   <span className="font-bold text-foreground">
-                    {nb[name] || 0} best recommended
+                    {nb[name] || 0} top pref · <span className="text-muted-foreground font-normal">{attempts} attempts</span>
                   </span>
                 </div>
               ))}
