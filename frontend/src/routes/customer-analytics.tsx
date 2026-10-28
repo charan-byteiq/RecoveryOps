@@ -1,155 +1,326 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { ArrowRight, Building2, MapPin } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { createFileRoute, Link } from "@tanstack/react-router";
+import { useMemo } from "react";
 import { AppShell } from "@/components/app-shell";
-import { useBranch, type Branch } from "@/hooks/branch-context";
-import { useDate } from "@/hooks/date-context";
-import { api, formatMetricValue, getMetric, type BranchSummary } from "@/lib/api";
+import {
+  CUSTOMERS,
+  CHANNELS,
+  CONTENTS,
+  CADENCES,
+  bestChannel,
+  formatCurrency,
+} from "@/data/customer-nba-data";
 
 export const Route = createFileRoute("/customer-analytics")({
   head: () => ({
     meta: [
-      { title: "Branch Directory — Customer Level — RecoveryOps" },
+      { title: "Customer Portfolio Analytics — RecoveryOps" },
       {
         name: "description",
-        content: "Select a branch to view customer portfolios and priority worklists.",
+        content: "Right content, channel and cadence for every customer.",
       },
-      { property: "og:title", content: "Branch Directory — Customer Level — RecoveryOps" },
-      {
-        property: "og:description",
-        content: "Select a branch to view customer portfolios and priority worklists.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: CustomerAnalytics,
+  component: CustomerPortfolioAnalytics,
 });
 
-function estimatedAccounts(b: BranchSummary): number {
-  // dpd_30_plus_concentration is seeded with denominator = total active accounts
-  const dpd = getMetric(b.metrics, "dpd_30_plus_concentration");
-  return dpd?.denominator ?? 0;
-}
+function CustomerPortfolioAnalytics() {
+  const customers = CUSTOMERS;
+  const hi = customers.filter((c) => c.tier === "High").length;
+  const me = customers.filter((c) => c.tier === "Medium").length;
+  const lo = customers.filter((c) => c.tier === "Low").length;
 
-function CustomerAnalytics() {
-  const { selectedBranch, selectBranch } = useBranch();
-  const navigate = useNavigate();
-  const { selectedDate } = useDate();
-  const branchesQuery = useQuery({
-    queryKey: ["branches", selectedDate],
-    queryFn: () => api.getBranches(selectedDate),
+  const nb: Record<string, number> = {};
+  customers.forEach((c) => {
+    const ch = bestChannel(c);
+    nb[ch] = (nb[ch] || 0) + 1;
   });
-  const branches = branchesQuery.data?.data ?? [];
-  const totalAccounts = branches.reduce((sum, b) => sum + estimatedAccounts(b), 0);
 
-  const handleBranchClick = (branch: Branch) => {
-    selectBranch(branch);
-    navigate({ to: "/worklist" });
-  };
+  const avgCov = Math.round(customers.reduce((s, c) => s + c.cov, 0) / customers.length);
+  const avgOpen = Math.round(customers.reduce((s, c) => s + c.open, 0) / customers.length);
+  const avgClick = Math.round(customers.reduce((s, c) => s + c.click, 0) / customers.length);
+  const avgReach = Math.round(customers.reduce((s, c) => s + c.reach, 0) / customers.length);
+  const avgPays = Math.round(customers.reduce((s, c) => s + c.pays, 0) / customers.length);
+  const avgLast = Math.round(customers.reduce((s, c) => s + c.last, 0) / customers.length);
+
+  const topChannelEntry = Object.entries(nb).sort((a, b) => b[1] - a[1])[0];
+  const topChannel = topChannelEntry ? topChannelEntry[0] : "Phone";
+
+  const chs = useMemo(() => {
+    return CHANNELS.map((n) => {
+      const a = customers
+        .map((c) => c.ch.find((x) => x[0] === n))
+        .filter((x): x is [string, number, number] => Boolean(x));
+      const avgSuccess = Math.round(a.reduce((s, x) => s + x[1], 0) / a.length);
+      const cost = a[0] ? a[0][2] : 0;
+      return { name: n, success: avgSuccess, cost };
+    });
+  }, [customers]);
+
+  const combo = useMemo(() => {
+    const map: Record<string, number> = {};
+    customers.forEach((c) => {
+      const k = `${c.content[0]} → ${bestChannel(c)} → ${c.cad[0]}`;
+      map[k] = (map[k] || 0) + 1;
+    });
+    return Object.entries(map)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5);
+  }, [customers]);
+
+  // Donut chart calculation
+  const totalTier = hi + me + lo;
+  const hiDeg = (hi / totalTier) * 360;
+  const meDeg = (me / totalTier) * 360;
+  const conicGradient = `conic-gradient(var(--color-destructive, #d93a3a) 0deg ${hiDeg}deg, #e8890c ${hiDeg}deg ${hiDeg + meDeg}deg, #12a36b ${hiDeg + meDeg}deg 360deg)`;
 
   return (
     <AppShell
-      title="Customer Intelligence — Branch Network"
+      title="Customer Portfolio Analytics"
       section="Customer Level"
-      subtitle="Select a branch portfolio to view customer accounts and open priority worklist"
+      subtitle="Next Best Actions"
+      actions={
+        <div className="flex items-center gap-3">
+          <Link
+            to="/worklist"
+            className="inline-flex items-center justify-center rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground shadow-xs hover:bg-primary/90 transition"
+          >
+            Open Priority Worklist
+          </Link>
+          <span className="hidden sm:inline-block rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
+            Refreshed: Oct 28, 2026
+          </span>
+        </div>
+      }
     >
-      <div className="mx-auto max-w-[1280px] space-y-5">
-        {/* Network Header Summary Banner */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 rounded-2xl border border-border/60 bg-card/40 p-4 backdrop-blur-md">
-          <div className="flex items-center gap-3">
-            <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
-              <Building2 className="size-5" />
+      <div className="mx-auto max-w-[1280px] space-y-4">
+        {/* HERO CARD */}
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+          <h2 className="text-xl font-bold tracking-tight text-foreground">
+            Right content, channel and cadence for every customer
+          </h2>
+          <p className="mt-1 text-xs text-muted-foreground">
+            Engagement, Payment and Outreach models feed one priority score.
+          </p>
+
+          <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Customers in Scope
+              </div>
+              <div className="mt-1 text-3xl font-extrabold text-primary">{customers.length}</div>
             </div>
             <div>
-              <h2 className="text-sm font-bold text-display">Active Regional Branch Portfolios</h2>
-              <p className="text-xs text-muted-foreground">
-                {branches.length} operational branches • {totalAccounts.toLocaleString()} total
-                customer accounts
-              </p>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                High Priority
+              </div>
+              <div className="mt-1 text-3xl font-extrabold text-destructive">{hi}</div>
             </div>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-medium text-muted-foreground">
-            <span className="inline-block size-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>Select any branch from the list to launch its customer worklist</span>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Avg Payment Coverage
+              </div>
+              <div className="mt-1 text-3xl font-extrabold text-foreground">{avgCov}%</div>
+            </div>
+            <div>
+              <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
+                Top Channel
+              </div>
+              <div className="mt-1 text-3xl font-extrabold text-foreground">{topChannel}</div>
+            </div>
           </div>
         </div>
 
-        {branchesQuery.isLoading && (
-          <p className="text-sm text-muted-foreground">Loading branches…</p>
-        )}
+        {/* 3 MODELS ROW */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          {/* Card 1: Engagement Model · Content */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Engagement Model · Content</h3>
+              <p className="text-xs text-muted-foreground mb-4">Recommended content category</p>
 
-        <div className="space-y-2.5">
-          {branches.map((branch) => {
-            const isSelected = selectedBranch?.id === branch.id;
-            const delinquency = getMetric(branch.metrics, "delinquency_rate_30_plus")?.value ?? 0;
-            const isTopPerformer = delinquency <= 0.1;
-            const isAtRisk = delinquency >= 0.14;
-
-            return (
-              <div
-                key={branch.id}
-                role="button"
-                tabIndex={0}
-                onClick={() => handleBranchClick(branch)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" || e.key === " ") {
-                    e.preventDefault();
-                    handleBranchClick(branch);
-                  }
-                }}
-                className={`group flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 rounded-xl border p-4 transition-all duration-200 cursor-pointer shadow-xs hover:shadow-md hover:-translate-y-0.5 ${
-                  isSelected
-                    ? "border-primary bg-primary/5 ring-2 ring-primary/20"
-                    : "border-border/60 bg-card/60 hover:border-primary/40 hover:bg-card"
-                }`}
-              >
-                {/* Branch Info */}
-                <div className="flex items-center gap-3.5">
-                  <div className="flex size-11 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-colors duration-200 shrink-0">
-                    <Building2 className="size-5" />
-                  </div>
-                  <div>
-                    <div className="flex items-center gap-2.5">
-                      <h3 className="font-bold text-display text-base text-foreground group-hover:text-primary transition-colors">
-                        {branch.name}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-[10px] font-bold ${
-                          isTopPerformer
-                            ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
-                            : isAtRisk
-                              ? "bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20"
-                              : "bg-primary/10 text-primary border border-primary/20"
-                        }`}
-                      >
-                        {isTopPerformer ? "Top Tier" : isAtRisk ? "At Risk" : "Stable"}
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
-                      <div className="flex items-center gap-1">
-                        <MapPin className="size-3 text-muted-foreground/80" />
-                        <span>{branch.region}</span>
+              <div className="space-y-3">
+                {CONTENTS.map((name) => {
+                  const cnt = customers.filter((c) => c.content[0] === name).length;
+                  const pct = Math.round((cnt / customers.length) * 100);
+                  return (
+                    <div key={name}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground truncate max-w-[200px]">{name}</span>
+                        <span className="font-bold text-foreground">{cnt}</span>
                       </div>
-                      <span>•</span>
-                      <span>
-                        30+ DPD{" "}
-                        {formatMetricValue(getMetric(branch.metrics, "delinquency_rate_30_plus"))}
-                      </span>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-primary"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
                     </div>
-                  </div>
-                </div>
+                  );
+                })}
+              </div>
+            </div>
 
-                {/* Right Action */}
-                <div className="flex items-center justify-end gap-3 shrink-0">
-                  <div className="inline-flex items-center gap-2 rounded-lg bg-primary/10 px-3.5 py-1.5 text-xs font-semibold text-primary group-hover:bg-primary group-hover:text-primary-foreground transition-all duration-200">
-                    <span>Open Worklist</span>
-                    <ArrowRight className="size-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+            <div className="mt-5 border-t pt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Open rate</span>
+                <span className="font-bold text-foreground">{avgOpen}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Click rate</span>
+                <span className="font-bold text-foreground">{avgClick}%</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Response rate</span>
+                <span className="font-bold text-foreground">{avgReach}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 2: Payment Model · Cadence */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Payment Model · Cadence</h3>
+              <p className="text-xs text-muted-foreground mb-4">Recommended contact cadence</p>
+
+              <div className="space-y-3">
+                {CADENCES.map((name) => {
+                  const cnt = customers.filter((c) => c.cad[0] === name).length;
+                  const pct = Math.round((cnt / customers.length) * 100);
+                  return (
+                    <div key={name}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">{name}</span>
+                        <span className="font-bold text-foreground">{cnt}</span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-emerald-500"
+                          style={{ width: `${pct}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-5 border-t pt-3 space-y-1.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payments in last 30 days</span>
+                <span className="font-bold text-foreground">{avgPays}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Days since last payment</span>
+                <span className="font-bold text-foreground">{avgLast}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Payment coverage ratio</span>
+                <span className="font-bold text-foreground">{avgCov}%</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Card 3: Outreach Model · Channel */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Outreach Model · Channel</h3>
+              <p className="text-xs text-muted-foreground mb-4">Success rate by channel</p>
+
+              {/* Bar graph */}
+              <div className="flex items-end gap-3 h-28 my-3 pb-2 border-b">
+                {chs.map(({ name, success }) => (
+                  <div key={name} className="flex-1 flex flex-col items-center gap-1 text-[11px]">
+                    <div
+                      className="w-full rounded-t-md bg-primary transition-all duration-300"
+                      style={{ height: `${success * 1.05}px` }}
+                    />
+                    <span className="text-muted-foreground truncate max-w-[55px] text-[10px]">
+                      {name}
+                    </span>
+                    <span className="font-bold text-foreground text-xs">{success}%</span>
                   </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="space-y-1.5 text-xs">
+              {chs.map(({ name, cost }) => (
+                <div key={name} className="flex justify-between">
+                  <span className="text-muted-foreground">{name}</span>
+                  <span className="font-bold text-foreground">
+                    {nb[name] || 0} best · ${cost}/touch
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* 2 COLUMN BOTTOM ROW: Priority Scoring & Next Best Action Combinations */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          {/* Card 4: Unified Priority Scoring */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-foreground">Unified priority scoring</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Combined signal from all three models
+            </p>
+
+            <div className="flex items-center gap-6 flex-wrap">
+              <div
+                className="size-28 rounded-full shrink-0 shadow-inner"
+                style={{
+                  background: conicGradient,
+                  mask: "radial-gradient(circle 38px, transparent 98%, black)",
+                  WebkitMask: "radial-gradient(circle 38px, transparent 98%, black)",
+                }}
+              />
+              <div className="flex-1 min-w-[160px] space-y-2 text-xs">
+                <div className="flex justify-between items-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+                    High
+                  </span>
+                  <span className="font-bold text-foreground text-sm">{hi}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+                    Medium
+                  </span>
+                  <span className="font-bold text-foreground text-sm">{me}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+                    Low
+                  </span>
+                  <span className="font-bold text-foreground text-sm">{lo}</span>
                 </div>
               </div>
-            );
-          })}
+            </div>
+
+            <p className="mt-4 text-xs text-muted-foreground">
+              <Link to="/worklist" className="font-semibold text-primary hover:underline">
+                Open the priority worklist →
+              </Link>
+            </p>
+          </div>
+
+          {/* Card 5: Next best action combinations */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-foreground">Next best action combinations</h3>
+            <p className="text-xs text-muted-foreground mb-4">Content → Channel → Cadence</p>
+
+            <div className="space-y-2.5">
+              {combo.map(([k, v]) => (
+                <div
+                  key={k}
+                  className="rounded-xl border border-border/60 bg-muted/20 px-3.5 py-2.5 text-xs"
+                >
+                  <b className="text-primary font-bold">{v}</b>{" "}
+                  <span className="text-muted-foreground">customers ·</span>{" "}
+                  <span className="font-medium text-foreground">{k}</span>
+                </div>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
     </AppShell>

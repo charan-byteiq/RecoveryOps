@@ -1,35 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useEffect, useState } from "react";
-import {
-  ArrowLeft,
-  Calendar,
-  Check,
-  ChevronRight,
-  Clock3,
-  Mail,
-  MapPin,
-  MessageSquare,
-  Phone,
-  ShieldAlert,
-  Sparkles,
-  TrendingDown,
-  TrendingUp,
-  WalletCards,
-  X,
-} from "lucide-react";
-import {
-  ResponsiveContainer,
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  Tooltip as RechartsTooltip,
-} from "recharts";
+import { useState } from "react";
 import { toast } from "sonner";
+import { ArrowLeft, Check, Phone, X } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
-import { Button, GlassCard, Status } from "@/components/ui";
-import { useDate } from "@/hooks/date-context";
-import { customers, getCustomersForDate, getCustomerDetailContext } from "@/data/mock-data";
+import { CUSTOMERS, bestChannel, type CustomerData } from "@/data/customer-nba-data";
 
 export const Route = createFileRoute("/customers/$customerId")({
   head: () => ({
@@ -39,787 +13,466 @@ export const Route = createFileRoute("/customers/$customerId")({
         name: "description",
         content: "Customer priority explanation, next best action and outcome capture.",
       },
-      { property: "og:title", content: "Customer 360 Workspace — RecoveryOps" },
-      {
-        property: "og:description",
-        content: "Customer priority explanation, next best action and outcome capture.",
-      },
-      { property: "og:type", content: "website" },
-      { name: "twitter:card", content: "summary_large_image" },
     ],
   }),
-  component: CustomerProfile,
+  component: CustomerDetailView,
 });
 
-interface TimelineItem {
-  id: string;
-  type: "ptp" | "phone" | "sms" | "payment" | "visit";
-  title: string;
-  note: string;
-  timestamp: string;
-  isGood?: boolean;
-  isAlert?: boolean;
-}
-
-function CustomerNotFound() {
-  return (
-    <AppShell title="Customer Not Found" section="Customer Level" subtitle="Collections profile">
-      <div className="mx-auto max-w-[1280px] p-8 text-center">
-        <p className="text-muted-foreground">Customer record not found.</p>
-        <Link to="/worklist" className="mt-4 inline-block font-semibold text-primary underline">
-          Return to Worklist
-        </Link>
-      </div>
-    </AppShell>
-  );
-}
-
-function CustomerProfile() {
+function CustomerDetailView() {
   const { customerId } = Route.useParams();
-  const { selectedDate, formattedDate } = useDate();
+  const c = CUSTOMERS.find((x) => x.id === customerId) || CUSTOMERS[0]!;
 
-  // All hooks must be called before any early return.
   const [drawerOpen, setDrawerOpen] = useState(false);
-  const [humanApproved, setHumanApproved] = useState(false);
-  const [selectedOutcome, setSelectedOutcome] = useState("Promise to Pay");
-  const [ptpAmountInput, setPtpAmountInput] = useState("$1,200");
-  const [ptpDateInput, setPtpDateInput] = useState("2026-09-27");
-  const [notesInput, setNotesInput] = useState(
-    "Customer confirmed salary credit and agreed to honor partial commitment.",
-  );
-  const [timelineEvents, setTimelineEvents] = useState<TimelineItem[]>([]);
+  const [selectedOutcome, setSelectedOutcome] = useState("Connected");
+  const [ptpAmount, setPtpAmount] = useState("$1,200");
+  const [ptpDate, setPtpDate] = useState("2026-11-05");
+  const [notes, setNotes] = useState("Agreed to cure partial balance.");
+  const [timelineList, setTimelineList] = useState([
+    {
+      title: `${bestChannel(c)} outreach`,
+      category: "Outreach",
+      time: "2d ago",
+      status: c.reach > 40 ? "Response received" : "No response",
+      tone: "blue",
+    },
+    {
+      title: `Content sent: ${c.content[0]}`,
+      category: "Engagement",
+      time: "5d ago",
+      status: `Opened${c.click > 30 ? " and clicked" : ""}`,
+      tone: "green",
+    },
+    {
+      title: "Payment received",
+      category: "Payment",
+      time: `${c.last}d ago`,
+      status: "Applied to account",
+      tone: "green",
+    },
+    {
+      title: `Reminder via ${c.aff[1] ? c.aff[1][0] : "SMS"}`,
+      category: "Outreach",
+      time: `${c.last + 7}d ago`,
+      status: "Delivered",
+      tone: "blue",
+    },
+  ]);
 
-  // Find customer snapshot as of the selected global business date
-  const customerList = useMemo(() => getCustomersForDate(selectedDate), [selectedDate]);
-  const customer = useMemo(
-    () => customerList.find((c) => c.id === customerId),
-    [customerList, customerId],
-  );
+  const bCh = bestChannel(c);
+  const fallbackCh = c.aff[1] ? c.aff[1][0] : "SMS";
 
-  // Synchronize timeline with selected business date
-  useEffect(() => {
-    if (customer) {
-      const d = getCustomerDetailContext(customer.id, selectedDate);
-      setTimelineEvents(d.timeline);
-    }
-  }, [selectedDate, customerId, customer]);
+  const wk = [
+    Math.ceil(c.touches / 3),
+    Math.ceil(c.touches / 4) + 1,
+    Math.floor(c.touches / 3) + 1,
+    Math.max(1, c.touches - 4),
+  ];
+  const pw = [0, c.pays > 1 ? 1 : 0, 0, c.pays ? 1 : 0];
+  const maxWk = Math.max(...wk, 3);
 
-  // Fallback if not found
-  if (!customer) {
-    return <CustomerNotFound />;
-  }
-
-  const detail = getCustomerDetailContext(customer.id, selectedDate);
-
-  const handleSaveOutcome = () => {
-    // Append to timeline associated with current working snapshot date
-    const newEvent: TimelineItem = {
-      id: `ev-${Date.now()}`,
-      type: selectedOutcome === "Promise to Pay" ? "ptp" : "phone",
-      title: `Outcome Logged: ${selectedOutcome}`,
-      note:
-        selectedOutcome === "Promise to Pay"
-          ? `${ptpAmountInput} committed for ${ptpDateInput} · ${notesInput}`
-          : notesInput,
-      timestamp: `${formattedDate} · Just now (Frontline Agent)`,
-      isGood: selectedOutcome === "Promise to Pay",
-    };
-
-    setTimelineEvents([newEvent, ...timelineEvents]);
+  const handleRecordOutcome = () => {
+    setTimelineList([
+      {
+        title: `Outcome Logged: ${selectedOutcome}`,
+        category: "Outreach",
+        time: "Just now",
+        status: selectedOutcome === "Promise to Pay" ? `${ptpAmount} PTP` : "Logged",
+        tone: "green",
+      },
+      ...timelineList,
+    ]);
     setDrawerOpen(false);
-    toast.success("Outcome recorded successfully", {
-      description: `Logged disposition "${selectedOutcome}" to customer activity timeline for ${formattedDate}.`,
-    });
+    toast.success(`Outcome "${selectedOutcome}" recorded for ${c.name}`);
   };
 
-  const isDeteriorating = detail.riskTrajectory.direction === "Deteriorating";
+  const getTierBadge = (tier: string) => {
+    if (tier === "High") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+          Priority · High
+        </span>
+      );
+    }
+    if (tier === "Medium") {
+      return (
+        <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+          Priority · Medium
+        </span>
+      );
+    }
+    return (
+      <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+        Priority · Low
+      </span>
+    );
+  };
 
   return (
     <AppShell
-      title={`${customer.name} · ${customer.id}`}
+      title={`${c.name} · ${c.id}`}
       section="Customer Level"
-      subtitle="Collections 360 Workspace"
+      subtitle="Customer 360 Workspace"
       actions={
-        <div className="flex items-center gap-2">
-          <Link
-            to="/worklist"
-            search={{ segment: undefined }}
-            className="flex items-center gap-1.5 rounded-lg border bg-card/60 px-3 py-1.5 text-xs font-semibold text-foreground transition hover:bg-card"
-          >
-            <ArrowLeft className="size-3.5" /> Back to Worklist
-          </Link>
-        </div>
+        <Link
+          to="/worklist"
+          className="inline-flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-3.5 py-1.5 text-xs font-semibold text-foreground hover:bg-muted transition shadow-xs"
+        >
+          <ArrowLeft className="size-3.5" /> Back to Worklist
+        </Link>
       }
     >
       <div className="mx-auto max-w-[1280px] space-y-4">
-        {/* 1. EXECUTIVE CUSTOMER HEADER */}
-        <GlassCard className="p-5">
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-center">
+        {/* CUSTOMER HEADER CARD */}
+        <div className="rounded-2xl border border-border/80 bg-card p-6 shadow-xs">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
             <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h2 className="text-2xl font-bold text-display">{customer.name}</h2>
-                <Status tone="danger">Priority · {customer.priority}</Status>
-                <Status tone={customer.risk === "High" ? "danger" : "warn"}>
-                  Risk · {customer.risk}
-                </Status>
-                <Status tone={customer.contact === "High" ? "good" : "neutral"}>
-                  Contact · {customer.contact}
-                </Status>
-              </div>
-              <p className="mt-1.5 text-xs text-muted-foreground">
-                <span className="font-semibold text-foreground">{customer.id}</span> • Account{" "}
-                <span className="font-semibold text-foreground">{customer.account}</span> •{" "}
-                {detail.product} • {customer.branch}
-              </p>
-            </div>
-
-            {/* KPI Badges */}
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[90px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
-                  Current DPD
-                </p>
-                <p className="text-xl font-bold text-destructive">{customer.dpd} DPD</p>
-              </div>
-
-              <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[110px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
-                  Outstanding
-                </p>
-                <p className="text-xl font-bold text-display">{customer.amount}</p>
-              </div>
-
-              <div className="rounded-xl border bg-card/60 px-4 py-2.5 text-center min-w-[100px]">
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-muted-foreground">
-                  PTP Status
-                </p>
-                <p
-                  className={`text-base font-bold ${
-                    customer.ptp === "Broken"
-                      ? "text-destructive"
-                      : customer.ptp === "Due today"
-                        ? "text-warning-foreground"
-                        : "text-muted-foreground"
-                  }`}
-                >
-                  {customer.ptp}
-                </p>
-              </div>
-
-              <Button
-                variant="primary"
-                size="sm"
-                onClick={() => setDrawerOpen(true)}
-                className="h-12 px-4 shadow-sm"
-              >
-                <Phone className="size-4" /> Record Outcome
-              </Button>
-            </div>
-          </div>
-        </GlassCard>
-
-        {/* 2. FOUR-PILLAR CONTEXT CARDS */}
-        {/* 2. THREE-PILLAR CONTEXT CARDS (Payment History, Outreach & Risk Trajectory perfectly aligned) */}
-        <div className="grid gap-3 grid-cols-1 md:grid-cols-3">
-          {/* Pillar 1: Payment History */}
-          <GlassCard className="p-4 flex flex-col justify-between h-full border-border/60">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-primary">
-                  <WalletCards className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
-                    1. Payment History
-                  </h3>
-                </div>
-                <span className="text-xs font-semibold text-foreground/80">
-                  {detail.paymentBehaviour.consistencyRatio}
-                </span>
-              </div>
-              <div className="mt-3.5 space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Consistency:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.paymentBehaviour.consistencyRatio} (
-                    {detail.paymentBehaviour.consistencyPct}%)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Last payment:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.paymentBehaviour.lastAmount} ({detail.paymentBehaviour.lastDate})
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Prob. of next bracket:
-                  </span>
-                  <span
-                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-                  >
-                    {detail.paymentBehaviour.probNextBracket}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Prob. of charge-off:
-                  </span>
-                  <span
-                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : "text-warning-foreground"}`}
-                  >
-                    {detail.paymentBehaviour.probChargeOff}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    PTPs fulfilled:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.paymentBehaviour.ptpFulfilled} of {detail.paymentBehaviour.ptpMade} (
-                    {Math.round(
-                      (detail.paymentBehaviour.ptpFulfilled / detail.paymentBehaviour.ptpMade) *
-                        100,
-                    )}
-                    %)
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span
-                className={`font-bold ${customer.risk === "High" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-              >
-                {customer.risk === "High" ? "Irregular" : "Verified"}
-              </span>{" "}
-              ·{" "}
-              {customer.risk === "High"
-                ? "Cash flow volatility noted"
-                : "Repayment history in good standing"}
-            </div>
-          </GlassCard>
-
-          {/* Pillar 2: Outreach Analysis */}
-          <GlassCard className="p-4 flex flex-col justify-between h-full border-border/60">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400">
-                  <Phone className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
-                    2. Outreach Analysis
-                  </h3>
-                </div>
-                <Status tone="good">{detail.outreach.contactRate}% Reach</Status>
-              </div>
-              <div className="mt-3.5 space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Total outreach:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.outreach.totalAttempts} touches recorded
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Successful contacts:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.outreach.successful} of {detail.outreach.totalAttempts} (
-                    {detail.outreach.contactRate}%)
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Preferred channel:
-                  </span>
-                  <span className="font-bold text-primary">{detail.outreach.preferredChannel}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Channel reachability:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.outreach.phoneReach}% Voice · {detail.outreach.smsReach}% SMS
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Best response window:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.outreach.bestWindow}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span className="font-bold text-primary">{customer.contact} reachability</span> ·
-              Window {detail.outreach.bestWindow}
-            </div>
-          </GlassCard>
-
-          {/* Pillar 3: Risk Trajectory */}
-          <GlassCard className="p-4 flex flex-col justify-between h-full border-border/60">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-destructive">
-                  <ShieldAlert className="size-4" />
-                  <h3 className="text-xs font-bold uppercase tracking-[.1em] text-foreground">
-                    3. Risk Trajectory
-                  </h3>
-                </div>
-                <Status tone={customer.dpd > 30 ? "danger" : customer.dpd > 15 ? "warn" : "good"}>
-                  {customer.dpd > 30
-                    ? "Deteriorating"
-                    : customer.dpd > 15
-                      ? "Monitoring"
-                      : "Controlled"}
-                </Status>
-              </div>
-              <div className="mt-3.5 space-y-2.5 text-xs">
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    30-day progression:
-                  </span>
-                  <span
-                    className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-                  >
-                    {detail.riskTrajectory.dpdChange}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    15-day velocity:
-                  </span>
-                  <span
-                    className={`font-semibold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-                  >
-                    {detail.riskTrajectory.dpd15Change ?? detail.riskTrajectory.dpdChange}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Exposure ratio:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {detail.riskTrajectory.exposureRatio}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Delinquency bucket:
-                  </span>
-                  <span className="font-semibold text-foreground">
-                    {customer.dpd <= 30
-                      ? "1–30 DPD (Early stage)"
-                      : customer.dpd <= 60
-                        ? "31–60 DPD (Mid stage)"
-                        : "60+ DPD (Late stage)"}
-                  </span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span className="text-slate-600 dark:text-slate-300 font-medium">
-                    Severity tier:
-                  </span>
-                  <span
-                    className={`font-bold ${customer.risk === "High" ? "text-destructive" : customer.risk === "Medium" ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-                  >
-                    {detail.riskTrajectory.severityTier ??
-                      (customer.risk === "High"
-                        ? "Elevated Default Risk"
-                        : customer.risk === "Medium"
-                          ? "Moderate Risk Exposure"
-                          : "Low Delinquency Tier")}
-                  </span>
-                </div>
-              </div>
-            </div>
-            <div className="mt-4 rounded-xl border border-border/50 bg-muted/30 p-2.5 text-xs text-foreground/90 font-medium">
-              <span
-                className={`font-bold ${customer.dpd > 30 ? "text-destructive" : customer.dpd > 15 ? "text-warning-foreground" : "text-emerald-600 dark:text-emerald-400"}`}
-              >
-                {customer.dpd > 30
-                  ? "Late-stage hardening"
-                  : customer.dpd > 15
-                    ? "Pre-30 day window"
-                    : "Early-stage window"}
-              </span>{" "}
-              ·{" "}
-              {customer.dpd > 30
-                ? "Immediate supervisor action required"
-                : customer.dpd > 15
-                  ? "Proactive reminder recommended"
-                  : "High self-cure probability"}
-            </div>
-          </GlassCard>
-        </div>
-
-        {/* 3. VISUAL ANALYSIS SECTION: DPD TREND + RESOLUTION INSIGHTS */}
-        <div className="grid gap-4 lg:grid-cols-12">
-          {/* DPD TREND LINE CHART */}
-          <GlassCard className="p-5 lg:col-span-6 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-bold text-display">DPD Progression Trajectory</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Historical 30-day delinquency progression matching account records
-                  </p>
-                </div>
-                <div
-                  className={`flex items-center gap-1 text-xs font-bold ${
-                    detail.riskTrajectory.direction === "Improving"
-                      ? "text-emerald-600 dark:text-emerald-400"
-                      : detail.riskTrajectory.direction === "Deteriorating"
-                        ? "text-destructive"
-                        : "text-warning-foreground"
-                  }`}
-                >
-                  {detail.riskTrajectory.direction === "Improving" ? (
-                    <TrendingDown className="size-4" />
-                  ) : detail.riskTrajectory.direction === "Deteriorating" ? (
-                    <TrendingUp className="size-4" />
-                  ) : (
-                    <Clock3 className="size-4" />
-                  )}
-                  <span>{detail.riskTrajectory.direction}</span>
-                </div>
-              </div>
-
-              <div className="mt-4 h-48 w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <LineChart
-                    data={detail.dpdHistory}
-                    margin={{ top: 18, right: 30, left: -20, bottom: 0 }}
-                  >
-                    <XAxis
-                      dataKey="period"
-                      tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <YAxis
-                      domain={[0, Math.max(10, customer.dpd + 8)]}
-                      tick={{ fontSize: 11, fill: "currentColor", opacity: 0.7 }}
-                      axisLine={false}
-                      tickLine={false}
-                    />
-                    <RechartsTooltip
-                      contentStyle={{
-                        backgroundColor: "var(--color-card, #fff)",
-                        borderColor: "var(--color-border, #ccc)",
-                        borderRadius: "8px",
-                        fontSize: "12px",
-                      }}
-                      formatter={(val: number) => [`${val} DPD`, "Delinquency"]}
-                    />
-                    <Line
-                      type="monotone"
-                      dataKey="dpd"
-                      name="Days Past Due (DPD)"
-                      stroke={
-                        detail.riskTrajectory.direction === "Improving"
-                          ? "#10b981"
-                          : detail.riskTrajectory.direction === "Deteriorating"
-                            ? "var(--color-destructive, #ef4444)"
-                            : "var(--color-warning-foreground, #f59e0b)"
-                      }
-                      strokeWidth={3}
-                      dot={{
-                        r: 5,
-                        fill:
-                          detail.riskTrajectory.direction === "Improving"
-                            ? "#10b981"
-                            : detail.riskTrajectory.direction === "Deteriorating"
-                              ? "var(--color-destructive, #ef4444)"
-                              : "var(--color-warning-foreground, #f59e0b)",
-                      }}
-                    />
-                  </LineChart>
-                </ResponsiveContainer>
-              </div>
-            </div>
-            <div className="mt-3 rounded-lg border border-border/50 bg-muted/20 p-2 text-center text-xs text-muted-foreground font-medium">
-              {detail.riskTrajectory.direction === "Improving"
-                ? `Account curing: DPD decreased from ${detail.dpdHistory[0]?.dpd} to ${customer.dpd} DPD (${detail.riskTrajectory.dpdChange}) · Positive repayment cadence`
-                : customer.dpd <= 10
-                  ? `Account is in early-stage delinquency (${customer.dpd} DPD) · Frontline contact window active`
-                  : `DPD moved from ${detail.dpdHistory[0]?.dpd} to ${customer.dpd} DPD (${detail.riskTrajectory.dpdChange}) · Intervention window active`}
-            </div>
-          </GlassCard>
-
-          {/* CUSTOMER RESOLUTION INSIGHTS */}
-          <GlassCard className="p-5 flex flex-col justify-between border-primary/20 bg-primary/5 lg:col-span-6">
-            <div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2 text-primary">
-                  <Sparkles className="size-4" />
-                  <h3 className="font-bold text-display text-foreground">
-                    Customer Resolution Insights
-                  </h3>
-                </div>
-                <span className="rounded-full bg-primary/15 px-2.5 py-0.5 text-[11px] font-bold text-primary">
-                  Actionable Intelligence
-                </span>
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h2 className="text-2xl font-bold tracking-tight text-foreground">{c.name}</h2>
+                {getTierBadge(c.tier)}
               </div>
               <p className="mt-1 text-xs text-muted-foreground">
-                Actionable justification, delinquency drivers & behavioral patterns
+                {c.id} · Account {c.acct} · Exposure ${c.exp.toLocaleString()}
               </p>
-
-              <ul className="mt-4 space-y-2.5 text-xs leading-relaxed">
-                {detail.priorityJustification.map((reason, i) => (
-                  <li key={i} className="flex items-start gap-2.5 rounded-lg border bg-card/60 p-3">
-                    <span className="mt-0.5 size-2 rounded-full bg-primary shrink-0" />
-                    <span className="font-medium text-foreground">{reason}</span>
-                  </li>
-                ))}
-              </ul>
             </div>
 
-            <div className="mt-4 flex items-center justify-between rounded-xl border border-primary/20 bg-primary/10 p-3 text-xs">
-              <span className="font-semibold text-primary">
-                High operational urgency · Immediate recovery ROI
-              </span>
-              <span className="text-[11px] text-muted-foreground">Priority Score: High</span>
+            <div className="flex flex-wrap items-center gap-5 sm:gap-8">
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Priority Score
+                </div>
+                <div className="mt-0.5 text-2xl font-bold text-foreground">{c.pri}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Payment Coverage
+                </div>
+                <div className="mt-0.5 text-2xl font-bold text-foreground">{c.cov}%</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Best Channel
+                </div>
+                <div className="mt-0.5 text-xl font-bold text-primary">{bCh}</div>
+              </div>
+              <div>
+                <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                  Cadence
+                </div>
+                <div className="mt-0.5 text-xl font-bold text-foreground">{c.cad[0]}</div>
+              </div>
             </div>
-          </GlassCard>
+          </div>
         </div>
 
-        {/* 4. NEXT BEST ACTION (HERO COMPONENT) */}
-        <GlassCard className="overflow-hidden border-primary/30 shadow-md">
-          {/* NBA HEADER */}
-          <div className="bg-gradient-to-r from-primary via-primary/95 to-primary/85 px-6 py-5 text-primary-foreground">
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[.14em] opacity-90">
-                    <Sparkles className="size-3.5" /> Next Best Action
-                  </span>
-                  <span className="rounded-full bg-primary-foreground/20 px-2.5 py-0.5 text-[10px] font-bold">
-                    Prescribed
-                  </span>
-                </div>
-                <div className="mt-2.5 flex items-center gap-3">
-                  <div className="grid size-11 place-items-center rounded-xl bg-primary-foreground/20 shadow-xs">
-                    <Phone className="size-5" />
-                  </div>
-                  <div>
-                    <h3 className="text-2xl font-bold text-display">{detail.nba.action}</h3>
-                    <p className="text-xs opacity-90">{detail.nba.timing}</p>
-                  </div>
-                </div>
-              </div>
+        {/* 3 MODEL DETAIL CARDS */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+          {/* 1. Engagement Model · Content */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Engagement Model · Content</h3>
+              <p className="text-xs text-muted-foreground mb-4">
+                Recommended content and message purpose
+              </p>
 
-              {/* Action Trigger */}
-              <div className="flex items-center gap-2.5">
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => setDrawerOpen(true)}
-                  className="h-10 bg-primary-foreground text-primary hover:bg-primary-foreground/90 font-bold text-xs px-4 shadow-sm"
-                >
-                  <Phone className="size-4" /> Open Outcome Drawer
-                </Button>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Content category</span>
+                  <span className="font-bold text-primary">{c.content[0]}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Message purpose</span>
+                  <span className="font-semibold text-foreground text-right max-w-[180px]">
+                    {c.content[1]}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Open rate</span>
+                  <span className="font-semibold text-foreground">{c.open}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Click rate</span>
+                  <span className="font-semibold text-foreground">{c.click}%</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Response rate</span>
+                  <span className="font-semibold text-foreground">{c.reach}%</span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* NBA BODY - 3 BALANCED COLUMNS */}
-          <div className="p-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {/* Column 1: Action Rationale & Risk Context */}
-              <div className="flex flex-col justify-between space-y-4">
-                <div>
-                  <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[.1em] text-muted-foreground">
-                    <Clock3 className="size-3.5 text-primary" />
-                    <span>Action Rationale</span>
-                  </div>
-                  <p className="mt-2 text-xs leading-relaxed font-medium text-foreground">
-                    {detail.nba.reason}
-                  </p>
-                </div>
+          {/* 2. Payment Model · Cadence */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Payment Model · Cadence</h3>
+              <p className="text-xs text-muted-foreground mb-4">Payment recency and frequency</p>
 
-                <div className="rounded-xl border border-border/60 bg-muted/20 p-3.5 space-y-2 text-xs">
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>Delinquency Exposure:</span>
-                    <span className="font-bold text-destructive">
-                      {customer.dpd} DPD ({customer.amount})
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>Target Outcome:</span>
-                    <span className="font-semibold text-foreground">
-                      Immediate Settlement / PTP
-                    </span>
-                  </div>
-                  <div className="flex justify-between items-center text-muted-foreground">
-                    <span>Contact Channel:</span>
-                    <span className="font-semibold text-primary">
-                      {detail.outreach.preferredChannel}
-                    </span>
-                  </div>
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Contact attempts</span>
+                  <span className="font-semibold text-foreground">{c.touches}</span>
                 </div>
-              </div>
-
-              {/* Column 2: Suggested Talking Points & Script */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[.1em] text-primary">
-                  <Sparkles className="size-3.5" />
-                  <span>Suggested Talking Points</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payments in last 30 days</span>
+                  <span className="font-semibold text-foreground">{c.pays}</span>
                 </div>
-                <div className="rounded-xl border border-primary/20 bg-primary/5 p-4 text-xs leading-relaxed space-y-2">
-                  <p className="font-semibold text-foreground">{detail.nba.approach}</p>
-                  <ul className="mt-2 space-y-1.5 text-[11px] text-muted-foreground border-t border-primary/10 pt-2">
-                    <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">1.</span> Verify identity and confirm
-                      recent cash flow status.
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">2.</span> Propose structured cure or
-                      partial payment plan today.
-                    </li>
-                    <li className="flex items-start gap-1.5">
-                      <span className="text-primary font-bold">3.</span> Re-confirm commitment date
-                      before closing contact.
-                    </li>
-                  </ul>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Days since last payment</span>
+                  <span className="font-semibold text-foreground">{c.last}</span>
                 </div>
-              </div>
-
-              {/* Column 3: Recommended Journey Sequence */}
-              <div className="space-y-4">
-                <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-[.1em] text-primary">
-                  <Clock3 className="size-3.5" />
-                  <span>Recommended Journey Sequence</span>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Payment coverage ratio</span>
+                  <span className="font-semibold text-foreground">{c.cov}%</span>
                 </div>
-                <div className="flex items-center justify-between rounded-xl border border-border/60 bg-card/60 p-4 text-center text-xs">
-                  <div className="flex flex-col items-center">
-                    <span className="size-8 rounded-full bg-primary/10 text-primary grid place-items-center font-bold">
-                      1
-                    </span>
-                    <span className="mt-1.5 text-xs font-semibold">Today · Phone</span>
-                    <span className="text-[10px] text-muted-foreground">Direct contact</span>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                  <div className="flex flex-col items-center">
-                    <span className="size-8 rounded-full bg-muted text-muted-foreground grid place-items-center font-bold">
-                      2
-                    </span>
-                    <span className="mt-1.5 text-xs font-semibold">+2d · Priority SMS</span>
-                    <span className="text-[10px] text-muted-foreground">Payment portal</span>
-                  </div>
-                  <ChevronRight className="size-4 text-muted-foreground" />
-                  <div className="flex flex-col items-center">
-                    <span className="size-8 rounded-full bg-muted text-muted-foreground grid place-items-center font-bold">
-                      3
-                    </span>
-                    <span className="mt-1.5 text-xs font-semibold">Escalate · Field</span>
-                    <span className="text-[10px] text-muted-foreground">Supervisor review</span>
-                  </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Contact frequency</span>
+                  <span className="font-semibold text-foreground">{c.cad[1]}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-muted-foreground">Recommended cadence</span>
+                  <span className="font-bold text-primary">{c.cad[0]}</span>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* GOVERNANCE & ACTION CONTROLS */}
-            <div className="mt-6 border-t pt-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`inline-flex items-center gap-1.5 text-xs font-bold rounded-full px-3 py-1 border transition-colors shadow-xs ${
-                    humanApproved
-                      ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border-emerald-500/30"
-                      : "bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/30"
-                  }`}
-                >
-                  <span
-                    className={`size-2 rounded-full ${humanApproved ? "bg-emerald-500" : "bg-amber-500 animate-pulse"}`}
+          {/* 3. Outreach Model · Channel */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs flex flex-col justify-between">
+            <div>
+              <h3 className="text-sm font-bold text-foreground">Outreach Model · Channel</h3>
+              <p className="text-xs text-muted-foreground mb-4">Channel affinity score</p>
+
+              <div className="space-y-2.5">
+                {c.aff.map(([name, score], idx) => {
+                  const chObj = c.ch.find((x) => x[0] === name);
+                  const successRate = chObj ? chObj[1] : 0;
+                  return (
+                    <div key={name}>
+                      <div className="flex justify-between text-xs mb-1">
+                        <span className="text-muted-foreground">
+                          {name} <small>(success {successRate}%)</small>
+                        </span>
+                        <span
+                          className={`font-bold ${idx === 0 ? "text-primary" : "text-foreground"}`}
+                        >
+                          {score}
+                          {idx === 0 ? " · Best" : ""}
+                        </span>
+                      </div>
+                      <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={`h-full rounded-full ${idx === 0 ? "bg-primary" : "bg-muted-foreground/40"}`}
+                          style={{ width: `${Math.min(100, score)}%` }}
+                        />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-4 border-t pt-2.5 flex justify-between text-xs">
+              <span className="text-muted-foreground">Best response window</span>
+              <span className="font-semibold text-foreground">{c.rsp}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 2 COLUMN MID ROW: Contacts/Payments chart & Why this action */}
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2">
+          {/* Card 4: Contact attempts and payments */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-foreground">Contact attempts and payments</h3>
+            <p className="text-xs text-muted-foreground mb-4">
+              Last 4 weeks · helps set follow-up timing
+            </p>
+
+            <div className="flex items-end gap-4 h-28 my-3 pb-2 border-b">
+              {wk.map((v, i) => (
+                <div key={i} className="flex-1 flex flex-col items-center gap-1 text-[11px]">
+                  <div
+                    className="w-full rounded-t-md bg-primary transition-all duration-300"
+                    style={{ height: `${(v / maxWk) * 80}px` }}
                   />
-                  {humanApproved ? "Approved ✓" : "Review Required ?"}
-                </span>
-              </div>
+                  <span className="text-muted-foreground text-[10px]">Week {i + 1}</span>
+                  <span className="font-semibold text-foreground text-[11px] text-center">
+                    {v} contacts
+                    {pw[i] ? " · paid" : ""}
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
 
-              <div className="flex items-center gap-2.5">
-                <Button
-                  variant={humanApproved ? "secondary" : "primary"}
-                  size="sm"
-                  onClick={() => {
-                    setHumanApproved(true);
-                    toast.success("Action Approved", {
-                      description: `Approved ${detail.nba.action} for ${customer.name}.`,
-                    });
-                  }}
-                  className="text-xs font-bold px-4 h-9 shadow-xs"
-                >
-                  <Check className="size-3.5" />
-                  {humanApproved ? "Approved" : "Approve Action"}
-                </Button>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  onClick={() => {
-                    setHumanApproved(false);
-                    toast.info("Channel Modified", {
-                      description: "Alternative contact channel flagged for follow-up.",
-                    });
-                  }}
-                  className="text-xs font-semibold px-4 h-9"
-                >
-                  Change Channel
-                </Button>
+          {/* Card 5: Why this action */}
+          <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+            <h3 className="text-sm font-bold text-foreground">Why this action</h3>
+            <p className="text-xs text-muted-foreground mb-4">Signals behind the recommendation</p>
+
+            <div className="space-y-2.5 text-xs">
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
+                Payment coverage is <b>{c.cov}%</b> and the last payment was <b>{c.last}</b> days
+                ago.
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
+                <b>{bCh}</b> has the highest affinity (<b>{c.aff[0]![1]}</b>) for this customer.
+              </div>
+              <div className="rounded-xl border border-border/60 bg-muted/20 p-3 text-foreground">
+                {c.reach < 40
+                  ? `Response rate is low (${c.reach}%), so a ${bCh.toLowerCase()} touch is preferred over digital reminders.`
+                  : `Responsive customer (${c.reach}%), so ${c.content[0].toLowerCase()} content should land effectively.`}
               </div>
             </div>
           </div>
-        </GlassCard>
+        </div>
+
+        {/* HERO NBA PRESCRIPTION CARD */}
+        <div className="rounded-2xl overflow-hidden border border-primary/40 bg-gradient-to-br from-primary to-blue-800 text-primary-foreground shadow-md">
+          {/* Header */}
+          <div className="p-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+            <div>
+              <span className="inline-block rounded-md bg-white/20 px-2.5 py-0.5 text-[10px] font-bold tracking-wider uppercase">
+                Next Best Action · Prescribed
+              </span>
+              <h2 className="mt-2 text-2xl font-bold tracking-tight">
+                {c.content[0]} via {bCh}
+              </h2>
+              <p className="mt-0.5 text-xs text-white/85">
+                {c.cad[0]} · best window {c.rsp}
+              </p>
+            </div>
+            <button
+              onClick={() => setDrawerOpen(true)}
+              className="inline-flex items-center gap-2 rounded-xl bg-white px-4 py-2.5 text-xs font-bold text-primary shadow-sm hover:bg-white/95 transition shrink-0"
+            >
+              <Phone className="size-3.5" /> Record Outcome
+            </button>
+          </div>
+
+          {/* Body Cards */}
+          <div className="bg-card text-foreground p-6 grid grid-cols-1 md:grid-cols-3 gap-5">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Content · Engagement
+              </div>
+              <p className="mt-1 text-xs">
+                <b className="text-foreground">{c.content[0]}</b>
+                <br />
+                <span className="text-muted-foreground">{c.content[1]}</span>
+              </p>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Channel · Outreach
+              </div>
+              <p className="mt-1 text-xs">
+                <b className="text-foreground">{bCh}</b>
+                <br />
+                <span className="text-muted-foreground">Fallback: {fallbackCh}</span>
+              </p>
+            </div>
+
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Cadence · Payment
+              </div>
+              <p className="mt-1 text-xs">
+                <b className="text-foreground">{c.cad[0]}</b>
+                <br />
+                <span className="text-muted-foreground">
+                  Review again after {c.cad[1].toLowerCase()} contact
+                </span>
+              </p>
+            </div>
+
+            <div className="md:col-span-3 border-t pt-4 flex flex-wrap justify-end gap-3">
+              <button
+                onClick={() => toast.info("Alternative contact channel flagged for follow-up.")}
+                className="rounded-xl border border-border/80 bg-card px-4 py-2 text-xs font-semibold text-foreground hover:bg-muted transition"
+              >
+                Change Channel
+              </button>
+              <button
+                onClick={() => toast.success(`Action approved for ${c.name}`)}
+                className="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-primary-foreground hover:bg-primary/90 transition shadow-xs"
+              >
+                Approve Action
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* ACTIVITY TIMELINE CARD */}
+        <div className="rounded-2xl border border-border/80 bg-card p-5 shadow-xs">
+          <h3 className="text-sm font-bold text-foreground">Activity timeline</h3>
+          <p className="text-xs text-muted-foreground mb-4">
+            Recent outreach, content and payment events
+          </p>
+
+          <div className="border-l-2 border-border/80 ml-3 pl-4 space-y-3">
+            {timelineList.map((item, i) => (
+              <div key={i} className="rounded-xl border border-border/60 bg-muted/20 p-3 text-xs">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="font-bold text-foreground">{item.title}</span>
+                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                    {item.category}
+                  </span>
+                  <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
+                    {item.status}
+                  </span>
+                </div>
+                <div className="text-[11px] text-muted-foreground mt-1">{item.time}</div>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* 5. SLIDE-OUT OUTCOME CAPTURE DRAWER */}
+      {/* OUTCOME DRAWER */}
       {drawerOpen && (
         <div className="fixed inset-0 z-50">
-          {/* Backdrop */}
           <button
             aria-label="Close outcome drawer"
             className="absolute inset-0 bg-foreground/30 backdrop-blur-xs transition"
             onClick={() => setDrawerOpen(false)}
           />
 
-          {/* Drawer Panel */}
-          <aside className="glass-strong absolute inset-y-0 right-0 w-full max-w-md overflow-y-auto border-l p-6 shadow-2xl">
+          <aside className="absolute inset-y-0 right-0 w-full max-w-md bg-card border-l p-6 shadow-2xl overflow-y-auto">
             <div className="flex items-center justify-between border-b pb-4">
               <div>
-                <p className="text-[10px] font-bold uppercase tracking-[.1em] text-primary">
+                <p className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   Outcome Capture
                 </p>
-                <h3 className="text-xl font-bold text-display">Record Call Outcome</h3>
+                <h3 className="text-lg font-bold text-foreground">Record Call Outcome</h3>
               </div>
-              <Button variant="ghost" className="size-8 p-0" onClick={() => setDrawerOpen(false)}>
-                <X className="size-5" />
-              </Button>
+              <button
+                className="size-8 rounded-lg hover:bg-muted grid place-items-center"
+                onClick={() => setDrawerOpen(false)}
+              >
+                <X className="size-4" />
+              </button>
             </div>
 
-            <div className="mt-5 space-y-4">
-              {/* Customer context pill */}
-              <div className="rounded-lg border bg-muted/40 p-3 text-xs">
-                <span className="font-bold text-foreground">{customer.name}</span> ({customer.id}) •{" "}
+            <div className="mt-5 space-y-4 text-xs">
+              <div className="rounded-lg border bg-muted/30 p-3">
+                <span className="font-bold text-foreground">{c.name}</span> ({c.id}) •{" "}
                 <span className="text-muted-foreground">
-                  {customer.amount} balance · {customer.dpd} DPD
+                  ${c.exp.toLocaleString()} balance · {c.dpd} DPD
                 </span>
               </div>
 
-              {/* Action Taken */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
                   Action Executed
                 </label>
-                <div className="rounded-lg border bg-card p-2.5 text-xs font-semibold flex items-center gap-2">
-                  <Phone className="size-3.5 text-primary" /> Phone Call to Customer
+                <div className="rounded-lg border bg-card p-2.5 font-semibold flex items-center gap-2">
+                  <Phone className="size-3.5 text-primary" /> {bCh} to Customer
                 </div>
               </div>
 
-              {/* Disposition Selection */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1.5">
+                <label className="block text-xs font-semibold text-muted-foreground mb-1.5">
                   Call Disposition
                 </label>
                 <div className="grid grid-cols-2 gap-2">
@@ -837,7 +490,7 @@ function CustomerProfile() {
                       key={disp}
                       type="button"
                       onClick={() => setSelectedOutcome(disp)}
-                      className={`rounded-lg border p-2 text-xs font-medium text-left transition ${
+                      className={`rounded-lg border p-2 text-xs text-left transition ${
                         selectedOutcome === disp
                           ? "border-primary bg-primary/10 text-primary font-bold shadow-xs"
                           : "bg-card hover:bg-muted text-foreground"
@@ -849,65 +502,52 @@ function CustomerProfile() {
                 </div>
               </div>
 
-              {/* Promise-to-Pay Specific Fields */}
               {selectedOutcome === "Promise to Pay" && (
-                <div className="space-y-3 rounded-xl border border-primary/20 bg-primary/5 p-3.5">
-                  <p className="text-xs font-bold text-primary flex items-center gap-1.5">
-                    <Check className="size-3.5" /> PTP Commitment Details
-                  </p>
-                  <div className="grid grid-cols-2 gap-2">
-                    <div>
-                      <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                        Promised Amount
-                      </label>
-                      <input
-                        type="text"
-                        value={ptpAmountInput}
-                        onChange={(e) => setPtpAmountInput(e.target.value)}
-                        className="h-9 w-full rounded-md border bg-card px-2.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-[11px] font-medium text-muted-foreground mb-1">
-                        Promised Date
-                      </label>
-                      <input
-                        type="date"
-                        value={ptpDateInput}
-                        onChange={(e) => setPtpDateInput(e.target.value)}
-                        className="h-9 w-full rounded-md border bg-card px-2.5 text-xs font-semibold outline-none focus:ring-1 focus:ring-primary"
-                      />
-                    </div>
+                <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/5 p-3 space-y-3">
+                  <div>
+                    <label className="block text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 mb-1">
+                      Committed PTP Amount
+                    </label>
+                    <input
+                      type="text"
+                      value={ptpAmount}
+                      onChange={(e) => setPtpAmount(e.target.value)}
+                      className="w-full rounded-md border border-border/80 bg-card px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-semibold text-emerald-800 dark:text-emerald-300 mb-1">
+                      Promise Target Date
+                    </label>
+                    <input
+                      type="date"
+                      value={ptpDate}
+                      onChange={(e) => setPtpDate(e.target.value)}
+                      className="w-full rounded-md border border-border/80 bg-card px-2.5 py-1.5 text-xs text-foreground focus:outline-none"
+                    />
                   </div>
                 </div>
               )}
 
-              {/* Agent Notes */}
               <div>
-                <label className="block text-xs font-bold text-muted-foreground mb-1">
-                  Collector Notes
+                <label className="block text-xs font-semibold text-muted-foreground mb-1">
+                  Agent Call Notes
                 </label>
                 <textarea
-                  value={notesInput}
-                  onChange={(e) => setNotesInput(e.target.value)}
                   rows={3}
-                  className="w-full rounded-lg border bg-card p-2.5 text-xs outline-none focus:ring-1 focus:ring-primary"
-                  placeholder="Record summary of customer commitment or reason for delay..."
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full rounded-lg border border-border/80 bg-card p-2 text-xs text-foreground focus:outline-none"
                 />
               </div>
 
-              {/* Action Buttons */}
-              <div className="pt-2 space-y-2">
-                <Button className="w-full h-10 font-bold" onClick={handleSaveOutcome}>
-                  <Check className="size-4" /> Save Outcome to Timeline
-                </Button>
-                <Button
-                  variant="secondary"
-                  className="w-full text-xs"
-                  onClick={() => setDrawerOpen(false)}
+              <div className="pt-2">
+                <button
+                  onClick={handleRecordOutcome}
+                  className="w-full rounded-xl bg-primary py-2.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-xs"
                 >
-                  Cancel
-                </Button>
+                  Save Outcome & Update Activity
+                </button>
               </div>
             </div>
           </aside>

@@ -232,8 +232,7 @@ export function AppShell({
               ) : null}
             </div>
 
-            {/* Customer Level Navigation - hidden for now, retained for subsequent steps */}
-            {/*
+            {/* Customer Level Navigation */}
             <div>
               <div className="px-2 pb-2 text-[10px] font-bold uppercase tracking-[.15em] text-muted-foreground">
                 Customer Level
@@ -242,7 +241,7 @@ export function AppShell({
                 <Link
                   to="/worklist"
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    pathname === "/worklist"
+                    pathname === "/worklist" || pathname.startsWith("/customers/")
                       ? "bg-primary/10 text-primary ring-1 ring-primary/15 font-semibold"
                       : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
                   }`}
@@ -265,7 +264,6 @@ export function AppShell({
                 </Link>
               </div>
             </div>
-            */}
           </nav>
 
           <div className="mt-auto px-3 pb-5">
