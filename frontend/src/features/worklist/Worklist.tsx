@@ -4,7 +4,6 @@ import { AppShell } from "@/components/app-shell";
 import {
   CUSTOMERS,
   TOUCHPOINT_METHODS,
-  TEMPLATES,
   BRANCH_METADATA,
   ALL_BRANCH_CODES,
   bestTouchpoint,
@@ -40,8 +39,6 @@ export function Worklist() {
   const [selectedBranchCode, setSelectedBranchCode] = useState<string>(initialBranch);
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
   const [touchpointFilter, setTouchpointFilter] = useState<string>("All");
-  const [templateFilter, setTemplateFilter] = useState<string>("All");
-  const [outreachStatusFilter, setOutreachStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
   // Sync state if URL changes
@@ -83,21 +80,15 @@ export function Worklist() {
     return baseCustomers.filter((c) => {
       const matchP = priorityFilter === "All" || c.tier === priorityFilter;
       const matchC = touchpointFilter === "All" || bestTouchpoint(c) === touchpointFilter;
-      const matchM = templateFilter === "All" || c.content[0] === templateFilter;
-      const matchO =
-        outreachStatusFilter === "All" ||
-        (outreachStatusFilter === "Zero Outreach" ? c.touches === 0 : c.touches > 0);
       const matchQ =
         searchQuery === "" ||
         (c.name + c.id + c.acct).toLowerCase().includes(searchQuery.toLowerCase());
-      return matchP && matchC && matchM && matchO && matchQ;
+      return matchP && matchC && matchQ;
     });
   }, [
     baseCustomers,
     priorityFilter,
     touchpointFilter,
-    templateFilter,
-    outreachStatusFilter,
     searchQuery,
   ]);
 
@@ -193,9 +184,6 @@ export function Worklist() {
                 <span className="rounded-2xl bg-white/15 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md border border-white/15">
                   {baseCustomers.length} Borrowers in Queue
                 </span>
-                <span className="rounded-2xl bg-rose-500/90 px-3.5 py-2 text-xs font-bold text-white shadow-md">
-                  {hiCount} High Risk
-                </span>
                 <button
                   onClick={() => handleBranchSelect("All")}
                   className="inline-flex items-center gap-1.5 rounded-2xl bg-white/20 hover:bg-white/30 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md transition cursor-pointer"
@@ -229,7 +217,7 @@ export function Worklist() {
             <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
               {hiCount}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">Act first · high risk</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Act first · high priority accounts</p>
           </div>
 
           <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-amber-500 before:to-yellow-400">
@@ -270,10 +258,10 @@ export function Worklist() {
             </div>
           </div>
 
-          {/* ALL 3 CORE FILTERS + SEARCH PANEL */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs">
+          {/* CORE FILTERS + SEARCH PANEL */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs">
             {/* Search Input */}
-            <div className="md:col-span-3">
+            <div className="md:col-span-2">
               <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Search
               </label>
@@ -347,60 +335,6 @@ export function Worklist() {
                 ))}
               </div>
             </div>
-
-            {/* Filter 3 · Suggested Template (Engagement Model) */}
-            <div>
-              <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
-                3 · Suggested Template
-              </label>
-              <select
-                value={templateFilter}
-                onChange={(e) => setTemplateFilter(e.target.value)}
-                className="h-[38px] w-full rounded-xl border border-border/80 bg-card px-3 text-xs font-semibold text-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none cursor-pointer"
-              >
-                <option value="All">All templates ({TEMPLATES.length})</option>
-                {TEMPLATES.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Post-due Outreach Status Filter */}
-            <div className="md:col-span-3">
-              <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                  Post-due Outreach:
-                </span>
-                {[
-                  { label: "All", count: baseCustomers.length },
-                  { label: "Contacted", count: baseCustomers.length - zeroOutreachCount },
-                  { label: "Zero Outreach", count: zeroOutreachCount },
-                ].map(({ label, count }) => (
-                  <button
-                    key={label}
-                    onClick={() => setOutreachStatusFilter(label)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition cursor-pointer ${
-                      outreachStatusFilter === label
-                        ? "bg-primary text-primary-foreground shadow-2xs"
-                        : "border border-border/70 bg-card text-muted-foreground hover:bg-muted/50"
-                    }`}
-                  >
-                    {label}
-                    <span
-                      className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                        outreachStatusFilter === label
-                          ? "bg-white/20 text-white"
-                          : "bg-muted text-foreground"
-                      }`}
-                    >
-                      {count}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            </div>
           </div>
 
           {/* TABLE OF BORROWERS WITH ALL 3 MODELS VISIBLE */}
@@ -410,7 +344,7 @@ export function Worklist() {
                 <tr className="border-b border-border/80 text-[10.5px] uppercase tracking-wider text-muted-foreground bg-muted/20">
                   <th className="px-4 py-3 font-bold">Rank</th>
                   <th className="px-4 py-3 font-bold">Customer & Account</th>
-                  <th className="px-4 py-3 font-bold">Priority & Risk</th>
+                  <th className="px-4 py-3 font-bold">Priority</th>
                   <th className="px-4 py-3 font-bold">1 · Engagement Model (Content)</th>
                   <th className="px-4 py-3 font-bold">2 · Payment Model (Cadence)</th>
                   <th className="px-4 py-3 font-bold">3 · Outreach Model (Channel)</th>
@@ -449,7 +383,7 @@ export function Worklist() {
                           </div>
                         </td>
 
-                        {/* Priority & Risk */}
+                        {/* Priority */}
                         <td className="px-4 py-3.5">
                           <div className="flex items-center gap-2">
                             {getTierBadge(c)}
