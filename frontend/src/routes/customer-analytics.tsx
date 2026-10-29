@@ -114,8 +114,8 @@ function CustomerBranchOverview() {
       }
     >
       <div className="mx-auto max-w-[1340px] space-y-6">
-        {/* COMPACT & ELEGANT HEADER BAR (NO UNWANTED HERO BANNER) */}
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl border border-border/80 bg-card shadow-xs">
+        {/* CLEAN HEADER BAR (SUMMARY PILLS REMOVED) */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 p-5 rounded-2xl border border-border/80 bg-card shadow-xs">
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
@@ -133,35 +133,12 @@ function CustomerBranchOverview() {
             </p>
           </div>
 
-          {/* NETWORK-WIDE SUMMARY PILLS */}
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            <div className="rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Total Exposure
-              </div>
-              <div className="text-base font-black text-foreground">
-                ${(totalDelinquentExposure / 1000).toFixed(0)}k
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                Active Borrowers
-              </div>
-              <div className="text-base font-black text-foreground">
-                {customers.length} Accounts
-              </div>
-            </div>
-
-            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2">
-              <div className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
-                High Priority
-              </div>
-              <div className="text-base font-black text-rose-600 dark:text-rose-400">
-                {totalHighPriority} Immediate
-              </div>
-            </div>
-          </div>
+          <Link
+            to="/worklist"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-primary px-4 py-2 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-xs shrink-0 self-start sm:self-center"
+          >
+            <ListChecks className="size-3.5" /> Open Full Worklist <ArrowRight className="size-3.5 ml-0.5" />
+          </Link>
         </div>
 
         {/* 6 BRANCHES BALANCED & FILLED GRID */}
