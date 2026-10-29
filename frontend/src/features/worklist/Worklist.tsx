@@ -1,25 +1,86 @@
-import { Link } from "@tanstack/react-router";
-import { useState, useMemo } from "react";
+import { Link, useRouterState, useNavigate } from "@tanstack/react-router";
+import { useState, useMemo, useEffect } from "react";
 import { AppShell } from "@/components/app-shell";
 import {
   CUSTOMERS,
   TOUCHPOINT_METHODS,
   TEMPLATES,
+  BRANCH_METADATA,
+  ALL_BRANCH_CODES,
   bestTouchpoint,
+  getStoredCustomerBranch,
+  setStoredCustomerBranch,
   type CustomerData,
 } from "@/data/customer-nba-data";
+import {
+  Building2,
+  X,
+  Phone,
+  Smartphone,
+  Mail,
+  MapPin,
+  ArrowRight,
+  Search,
+  Clock,
+  TrendingUp,
+  AlertCircle,
+  CheckCircle2,
+} from "lucide-react";
 
 export function Worklist() {
+  const navigate = useNavigate();
+  const searchParams = useRouterState({
+    select: (s) => (s.location.search as Record<string, string | undefined>),
+  });
+
+  const urlBranch = searchParams?.["branch"];
+  const storedBranch = typeof window !== "undefined" ? getStoredCustomerBranch() : null;
+  const initialBranch = urlBranch || storedBranch || "All";
+
+  const [selectedBranchCode, setSelectedBranchCode] = useState<string>(initialBranch);
   const [priorityFilter, setPriorityFilter] = useState<string>("All");
   const [touchpointFilter, setTouchpointFilter] = useState<string>("All");
   const [templateFilter, setTemplateFilter] = useState<string>("All");
   const [outreachStatusFilter, setOutreachStatusFilter] = useState<string>("All");
   const [searchQuery, setSearchQuery] = useState<string>("");
 
-  const customers = CUSTOMERS;
+  // Sync state if URL changes
+  useEffect(() => {
+    if (urlBranch && urlBranch !== selectedBranchCode) {
+      setSelectedBranchCode(urlBranch);
+      setStoredCustomerBranch(urlBranch);
+    } else if (!urlBranch && selectedBranchCode !== "All" && !storedBranch) {
+      setSelectedBranchCode("All");
+    }
+  }, [urlBranch]);
 
+  const handleBranchSelect = (code: string) => {
+    setSelectedBranchCode(code);
+    if (code === "All") {
+      setStoredCustomerBranch(null);
+      navigate({ to: "/worklist" });
+    } else {
+      setStoredCustomerBranch(code);
+      navigate({ to: "/worklist", search: { branch: code } });
+    }
+  };
+
+  const branchMeta =
+    selectedBranchCode && selectedBranchCode !== "All"
+      ? BRANCH_METADATA[selectedBranchCode]
+      : null;
+
+  // Base list filtered by active branch
+  const baseCustomers = useMemo(() => {
+    if (selectedBranchCode && selectedBranchCode !== "All") {
+      return CUSTOMERS.filter((c) => c.br === selectedBranchCode);
+    }
+    return CUSTOMERS;
+  }, [selectedBranchCode]);
+
+  // Secondary filters applied on top of branch base list
   const filteredCustomers = useMemo(() => {
-    return customers.filter((c) => {
+    return baseCustomers.filter((c) => {
       const matchP = priorityFilter === "All" || c.tier === priorityFilter;
       const matchC = touchpointFilter === "All" || bestTouchpoint(c) === touchpointFilter;
       const matchM = templateFilter === "All" || c.content[0] === templateFilter;
@@ -31,57 +92,134 @@ export function Worklist() {
         (c.name + c.id + c.acct).toLowerCase().includes(searchQuery.toLowerCase());
       return matchP && matchC && matchM && matchO && matchQ;
     });
-  }, [customers, priorityFilter, touchpointFilter, templateFilter, outreachStatusFilter, searchQuery]);
+  }, [
+    baseCustomers,
+    priorityFilter,
+    touchpointFilter,
+    templateFilter,
+    outreachStatusFilter,
+    searchQuery,
+  ]);
 
-  const hiCount = customers.filter((c) => c.tier === "High").length;
-  const lowCovCount = customers.filter((c) => c.cov < 25).length;
-  const lowReachCount = customers.filter((c) => c.reach < 40).length;
-  const zeroOutreachCount = customers.filter((c) => c.touches === 0).length;
+  // Dynamic statistics calculated for the active branch population
+  const hiCount = baseCustomers.filter((c) => c.tier === "High").length;
+  const medCount = baseCustomers.filter((c) => c.tier === "Medium").length;
+  const lowCount = baseCustomers.filter((c) => c.tier === "Low").length;
+  const lowCovCount = baseCustomers.filter((c) => c.cov < 25).length;
+  const lowReachCount = baseCustomers.filter((c) => c.reach < 40).length;
+  const zeroOutreachCount = baseCustomers.filter((c) => c.touches === 0).length;
 
   const getTierBadge = (c: CustomerData) => {
     if (c.tier === "High") {
       return (
-        <span className="inline-flex items-center rounded-full bg-destructive/15 px-2.5 py-0.5 text-xs font-semibold text-destructive">
+        <span className="inline-flex items-center rounded-full bg-rose-500/15 border border-rose-500/30 px-2.5 py-0.5 text-xs font-bold text-rose-600 dark:text-rose-400">
           High · {c.pri}
         </span>
       );
     }
     if (c.tier === "Medium") {
       return (
-        <span className="inline-flex items-center rounded-full bg-amber-500/15 px-2.5 py-0.5 text-xs font-semibold text-amber-600 dark:text-amber-400">
+        <span className="inline-flex items-center rounded-full bg-amber-500/15 border border-amber-500/30 px-2.5 py-0.5 text-xs font-bold text-amber-600 dark:text-amber-400">
           Medium · {c.pri}
         </span>
       );
     }
     return (
-      <span className="inline-flex items-center rounded-full bg-emerald-500/15 px-2.5 py-0.5 text-xs font-semibold text-emerald-600 dark:text-emerald-400">
+      <span className="inline-flex items-center rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
         Low · {c.pri}
       </span>
     );
+  };
+
+  const getChannelIcon = (name: string) => {
+    if (name.includes("Phone")) return <Phone className="size-3.5 text-blue-500 shrink-0" />;
+    if (name.includes("Field")) return <MapPin className="size-3.5 text-cyan-500 shrink-0" />;
+    if (name.includes("Mail")) return <Mail className="size-3.5 text-amber-500 shrink-0" />;
+    return <Smartphone className="size-3.5 text-emerald-500 shrink-0" />;
   };
 
   return (
     <AppShell
       title="Priority Worklist"
       section="Customer Level"
-      subtitle="Next Best Actions"
+      subtitle={branchMeta ? branchMeta.name : "All Operational Branches"}
       actions={
-        <span className="rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
-          Refreshed: Oct 28, 2026
-        </span>
+        <div className="flex items-center gap-3">
+          {/* Branch Switcher Dropdown */}
+          <div className="flex items-center gap-1.5 rounded-xl border border-border/80 bg-card px-2.5 py-1 text-xs font-medium">
+            <Building2 className="size-3.5 text-muted-foreground" />
+            <select
+              value={selectedBranchCode}
+              onChange={(e) => handleBranchSelect(e.target.value)}
+              className="bg-transparent text-xs font-semibold text-foreground focus:outline-none cursor-pointer"
+            >
+              <option value="All">All Branches (16 Borrowers)</option>
+              {ALL_BRANCH_CODES.map((code) => (
+                <option key={code} value={code}>
+                  Branch {code} — {BRANCH_METADATA[code]?.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <span className="hidden sm:inline-block rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
+            Refreshed: Oct 29, 2026
+          </span>
+        </div>
       }
     >
-      <div className="mx-auto max-w-[1280px] space-y-4">
-        {/* TOP 4 STAT CARDS */}
+      <div className="mx-auto max-w-[1340px] space-y-4">
+        {/* BRANCH-SPECIFIC HERO BANNER */}
+        {branchMeta ? (
+          <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-violet-700 via-fuchsia-600 to-pink-600 p-6 sm:p-7 text-white shadow-2xl">
+            {/* Glowing ambient decorative background */}
+            <div className="pointer-events-none absolute -top-16 -left-16 h-64 w-64 rounded-full bg-white/10 blur-3xl" />
+            <div className="pointer-events-none absolute -bottom-16 -right-16 h-64 w-64 rounded-full bg-purple-900/30 blur-3xl" />
+
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-5">
+              <div className="space-y-1.5 max-w-2xl">
+                <div className="inline-flex items-center gap-2 rounded-full bg-white/20 px-3 py-1 text-xs font-bold text-white backdrop-blur-md border border-white/20">
+                  <Building2 className="size-3.5" /> Branch {selectedBranchCode} Active Queue
+                </div>
+                <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
+                  {branchMeta.name} — Customer Priority Worklist
+                </h1>
+                <p className="text-xs sm:text-sm text-white/90 font-medium">
+                  Prioritized customer list with integrated Next Best Actions across Content, Cadence & Outreach.
+                </p>
+              </div>
+
+              <div className="flex items-center flex-wrap gap-2 shrink-0">
+                <span className="rounded-2xl bg-white/15 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md border border-white/15">
+                  {baseCustomers.length} Borrowers in Queue
+                </span>
+                <span className="rounded-2xl bg-rose-500/90 px-3.5 py-2 text-xs font-bold text-white shadow-md">
+                  {hiCount} High Risk
+                </span>
+                <button
+                  onClick={() => handleBranchSelect("All")}
+                  className="inline-flex items-center gap-1.5 rounded-2xl bg-white/20 hover:bg-white/30 px-3.5 py-2 text-xs font-bold text-white backdrop-blur-md transition cursor-pointer"
+                  title="View all branches"
+                >
+                  <X className="size-3.5" /> View All Branches
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : null}
+
+        {/* TOP 4 STAT CARDS (Branch-Aware & Real-time) */}
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
           <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-violet-600 before:to-pink-600">
             <div className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
               Active Queue
             </div>
             <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
-              {customers.length}
+              {baseCustomers.length}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">Customers ranked by priority</p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {branchMeta ? `Ranked in ${branchMeta.name}` : "Customers ranked by priority"}
+            </p>
           </div>
 
           <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-red-500 before:to-orange-500">
@@ -91,7 +229,7 @@ export function Worklist() {
             <div className="mt-1 text-3xl font-extrabold bg-gradient-to-r from-red-500 to-orange-500 bg-clip-text text-transparent">
               {hiCount}
             </div>
-            <p className="text-xs text-muted-foreground mt-0.5">Act first</p>
+            <p className="text-xs text-muted-foreground mt-0.5">Act first · high risk</p>
           </div>
 
           <div className="relative overflow-hidden rounded-2xl border border-border/80 bg-card p-4 pt-5 shadow-xs before:absolute before:inset-x-0 before:top-0 before:h-1 before:bg-gradient-to-r before:from-amber-500 before:to-yellow-400">
@@ -115,8 +253,8 @@ export function Worklist() {
           </div>
         </div>
 
-        {/* MAIN WORKLIST TABLE CARD */}
-        <div className="rounded-2xl border-t-4 border-t-violet-500 border-x border-b border-border/80 bg-card p-5 shadow-xs">
+        {/* MAIN WORKLIST TABLE CARD WITH FULL FILTER SUITE */}
+        <div className="rounded-2xl border-t-4 border-t-violet-500 border-x border-b border-border/80 bg-card p-5 shadow-xs space-y-4">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
@@ -127,42 +265,46 @@ export function Worklist() {
               </p>
             </div>
             <div className="text-xs text-muted-foreground">
-              Showing <b className="text-foreground">{filteredCustomers.length}</b> of {customers.length} customers
+              Showing <b className="text-foreground">{filteredCustomers.length}</b> of{" "}
+              {baseCustomers.length} borrowers
             </div>
           </div>
 
-          {/* FILTER PANEL */}
-          <div className="mt-4 grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs">
+          {/* ALL 3 CORE FILTERS + SEARCH PANEL */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 rounded-xl border border-border/70 bg-muted/20 p-3.5 text-xs">
             {/* Search Input */}
             <div className="md:col-span-3">
               <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 Search
               </label>
-              <input
-                type="text"
-                placeholder="Search customer name, ID or account"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="h-9 w-full rounded-xl border border-border/80 bg-card px-3.5 text-xs text-foreground placeholder:text-muted-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none"
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 size-3.5 text-muted-foreground" />
+                <input
+                  type="text"
+                  placeholder="Search customer name, ID or account..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="h-9 w-full rounded-xl border border-border/80 bg-card pl-9 pr-3 text-xs text-foreground placeholder:text-muted-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none"
+                />
+              </div>
             </div>
 
-            {/* Priority Filter */}
+            {/* Filter 1 · Priority (High / Med / Low) */}
             <div>
               <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 1 · Priority
               </label>
               <div className="flex gap-1 rounded-xl border border-border/80 bg-card p-1">
                 {[
-                  { label: "All", count: customers.length, color: "" },
+                  { label: "All", count: baseCustomers.length, color: "" },
                   { label: "High", count: hiCount, color: "bg-red-500" },
-                  { label: "Medium", count: customers.filter((c) => c.tier === "Medium").length, color: "bg-amber-500" },
-                  { label: "Low", count: customers.filter((c) => c.tier === "Low").length, color: "bg-emerald-500" },
+                  { label: "Medium", count: medCount, color: "bg-amber-500" },
+                  { label: "Low", count: lowCount, color: "bg-emerald-500" },
                 ].map(({ label, count, color }) => (
                   <button
                     key={label}
                     onClick={() => setPriorityFilter(label)}
-                    className={`flex-1 inline-flex items-center justify-center gap-1.5 rounded-lg py-1.5 text-xs font-semibold transition ${
+                    className={`flex-1 inline-flex items-center justify-center gap-1 rounded-lg py-1.5 text-xs font-semibold transition cursor-pointer ${
                       priorityFilter === label
                         ? "bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs"
                         : "text-foreground hover:bg-muted/50"
@@ -184,7 +326,7 @@ export function Worklist() {
               </div>
             </div>
 
-            {/* Communication Preferences Filter */}
+            {/* Filter 2 · Communication Preferences (Outreach Channels) */}
             <div>
               <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 2 · Communication Preferences
@@ -194,7 +336,7 @@ export function Worklist() {
                   <button
                     key={c}
                     onClick={() => setTouchpointFilter(c)}
-                    className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition text-center truncate ${
+                    className={`flex-1 rounded-lg py-1.5 text-xs font-semibold transition text-center truncate cursor-pointer ${
                       touchpointFilter === c
                         ? "bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-xs"
                         : "text-foreground hover:bg-muted/50"
@@ -206,7 +348,7 @@ export function Worklist() {
               </div>
             </div>
 
-            {/* Template Selection Filter */}
+            {/* Filter 3 · Suggested Template (Engagement Model) */}
             <div>
               <label className="block text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground mb-1.5">
                 3 · Suggested Template
@@ -216,7 +358,7 @@ export function Worklist() {
                 onChange={(e) => setTemplateFilter(e.target.value)}
                 className="h-[38px] w-full rounded-xl border border-border/80 bg-card px-3 text-xs font-semibold text-foreground focus:border-violet-500 focus:ring-2 focus:ring-violet-500/20 focus:outline-none cursor-pointer"
               >
-                <option value="All">All templates</option>
+                <option value="All">All templates ({TEMPLATES.length})</option>
                 {TEMPLATES.map((m) => (
                   <option key={m} value={m}>
                     {m}
@@ -225,21 +367,21 @@ export function Worklist() {
               </select>
             </div>
 
-            {/* Outreach Status Filter */}
+            {/* Post-due Outreach Status Filter */}
             <div className="md:col-span-3">
               <div className="flex items-center gap-2 flex-wrap pt-1 text-xs">
                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
                   Post-due Outreach:
                 </span>
                 {[
-                  { label: "All", count: customers.length },
-                  { label: "Contacted", count: customers.length - zeroOutreachCount },
+                  { label: "All", count: baseCustomers.length },
+                  { label: "Contacted", count: baseCustomers.length - zeroOutreachCount },
                   { label: "Zero Outreach", count: zeroOutreachCount },
                 ].map(({ label, count }) => (
                   <button
                     key={label}
                     onClick={() => setOutreachStatusFilter(label)}
-                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition ${
+                    className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold transition cursor-pointer ${
                       outreachStatusFilter === label
                         ? "bg-primary text-primary-foreground shadow-2xs"
                         : "border border-border/70 bg-card text-muted-foreground hover:bg-muted/50"
@@ -261,90 +403,120 @@ export function Worklist() {
             </div>
           </div>
 
-          {/* TABLE */}
-          <div className="mt-2 overflow-x-auto">
-            <table className="w-full min-w-[960px] text-left text-sm border-collapse">
+          {/* TABLE OF BORROWERS WITH ALL 3 MODELS VISIBLE */}
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[1020px] text-left text-xs border-collapse">
               <thead>
-                <tr className="border-b border-border/80 text-[11px] uppercase tracking-wider text-muted-foreground bg-muted/20">
-                  <th className="px-4 py-2.5 font-semibold">Rank</th>
-                  <th className="px-4 py-2.5 font-semibold">Customer</th>
-                  <th className="px-4 py-2.5 font-semibold">Priority</th>
-                  <th className="px-4 py-2.5 font-semibold">Suggested Template</th>
-                  <th className="px-4 py-2.5 font-semibold">Follow-up Timing</th>
-                  <th className="px-4 py-2.5 font-semibold">Communication Preferences</th>
-                  <th className="px-4 py-2.5 font-semibold">Repayment Status</th>
-                  <th className="px-4 py-2.5 text-right font-semibold">Action</th>
+                <tr className="border-b border-border/80 text-[10.5px] uppercase tracking-wider text-muted-foreground bg-muted/20">
+                  <th className="px-4 py-3 font-bold">Rank</th>
+                  <th className="px-4 py-3 font-bold">Customer & Account</th>
+                  <th className="px-4 py-3 font-bold">Priority & Risk</th>
+                  <th className="px-4 py-3 font-bold">1 · Engagement Model (Content)</th>
+                  <th className="px-4 py-3 font-bold">2 · Payment Model (Cadence)</th>
+                  <th className="px-4 py-3 font-bold">3 · Outreach Model (Channel)</th>
+                  <th className="px-4 py-3 font-bold">Exposure & DPD</th>
+                  <th className="px-4 py-3 text-right font-bold">Action</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border/60">
                 {filteredCustomers.length === 0 ? (
                   <tr>
                     <td colSpan={8} className="p-8 text-center text-xs text-muted-foreground">
-                      No customers match these filters.
+                      No borrowers match the current search or filters.
                     </td>
                   </tr>
                 ) : (
-                  filteredCustomers.map((c, i) => (
-                    <tr key={c.id} className="hover:bg-muted/30 transition">
-                      <td className="px-4 py-3 font-bold text-foreground">{i + 1}</td>
-                      <td className="px-4 py-3">
-                        <Link
-                          to="/customers/$customerId"
-                          params={{ customerId: c.id }}
-                          className="font-bold text-foreground hover:text-primary transition"
-                        >
-                          {c.name}
-                        </Link>
-                        <div className="text-[11px] text-muted-foreground">
-                          {c.id} · Acct {c.acct}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">{getTierBadge(c)}</td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{c.content[0]}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          Open {c.open}% · Interaction {c.click}%
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-medium text-foreground">{c.cad[0]}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {c.touches === 0 ? (
-                            <span className="font-semibold text-amber-600 dark:text-amber-400">
-                              No outreach post due-date
+                  filteredCustomers.map((c, i) => {
+                    const topChannel = bestTouchpoint(c);
+                    return (
+                      <tr key={c.id} className="hover:bg-muted/30 transition">
+                        {/* Rank */}
+                        <td className="px-4 py-3.5 font-bold text-foreground text-xs">
+                          {i + 1}
+                        </td>
+
+                        {/* Customer & Account */}
+                        <td className="px-4 py-3.5">
+                          <Link
+                            to="/customers/$customerId"
+                            params={{ customerId: c.id }}
+                            className="font-bold text-foreground hover:text-primary transition text-sm block"
+                          >
+                            {c.name}
+                          </Link>
+                          <div className="text-[11px] text-muted-foreground font-mono mt-0.5">
+                            {c.id} · {c.acct}
+                          </div>
+                        </td>
+
+                        {/* Priority & Risk */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-2">
+                            {getTierBadge(c)}
+                            <span className="text-xs font-extrabold text-foreground">
+                              Score: {c.pri}
                             </span>
-                          ) : (
-                            `${c.touches} touches · ${c.daysSinceOutreach}d ago`
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="font-bold text-foreground">{bestTouchpoint(c)}</div>
-                        <div className="text-[11px] text-muted-foreground">
-                          Affinity {c.aff[0]![1]}
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-xs">
-                        <div
-                          className={`font-semibold ${c.repaymentType === "Full Repayment" ? "text-emerald-600 dark:text-emerald-400" : c.repaymentType === "Partial Repayment" ? "text-amber-600 dark:text-amber-400" : "text-muted-foreground"}`}
-                        >
-                          {c.repaymentType}
-                        </div>
-                        <div className="text-[11px] text-muted-foreground">
-                          {c.last}d ago ({c.cov}% cov)
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <Link
-                          to="/customers/$customerId"
-                          params={{ customerId: c.id }}
-                          className="inline-flex items-center rounded-lg bg-primary/10 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary hover:text-primary-foreground transition shadow-2xs"
-                        >
-                          View Profile
-                        </Link>
-                      </td>
-                    </tr>
-                  ))
+                          </div>
+                        </td>
+
+                        {/* 1 · Engagement Model (Content) */}
+                        <td className="px-4 py-3.5 max-w-[240px]">
+                          <div className="font-bold text-foreground text-xs leading-snug">
+                            {c.content[0]}
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5 truncate">
+                            {c.content[1]} · <b className="text-foreground">Open {c.open}%</b>
+                          </div>
+                        </td>
+
+                        {/* 2 · Payment Model (Cadence) */}
+                        <td className="px-4 py-3.5">
+                          <div className="font-bold text-primary text-xs">{c.cad[0]}</div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5">
+                            {c.touches === 0
+                              ? "No touches yet"
+                              : `${c.touches} touches · ${c.daysSinceOutreach}d ago`}
+                          </div>
+                        </td>
+
+                        {/* 3 · Outreach Model (Channel) */}
+                        <td className="px-4 py-3.5">
+                          <div className="flex items-center gap-1.5 font-bold text-foreground text-xs">
+                            {getChannelIcon(topChannel)}
+                            <span>{topChannel}</span>
+                          </div>
+                          <div className="text-[11px] text-muted-foreground mt-0.5 flex items-center gap-1">
+                            <Clock className="size-3" /> {c.rsp}
+                          </div>
+                        </td>
+
+                        {/* Exposure & DPD */}
+                        <td className="px-4 py-3.5">
+                          <div className="font-extrabold text-foreground text-xs">
+                            ${c.exp.toLocaleString()}
+                          </div>
+                          <div
+                            className={`text-[11px] font-bold mt-0.5 ${
+                              c.dpd >= 30 ? "text-destructive" : "text-amber-600 dark:text-amber-400"
+                            }`}
+                          >
+                            {c.dpd} Days Past Due
+                          </div>
+                        </td>
+
+                        {/* Action */}
+                        <td className="px-4 py-3.5 text-right">
+                          <Link
+                            to="/customers/$customerId"
+                            params={{ customerId: c.id }}
+                            className="inline-flex items-center gap-1 rounded-xl bg-primary px-3.5 py-1.5 text-xs font-bold text-primary-foreground hover:bg-primary/90 transition shadow-xs"
+                          >
+                            View Profile <ArrowRight className="size-3" />
+                          </Link>
+                        </td>
+                      </tr>
+                    );
+                  })
                 )}
               </tbody>
             </table>

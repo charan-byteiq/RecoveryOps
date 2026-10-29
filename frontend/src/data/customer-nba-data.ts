@@ -180,3 +180,96 @@ export const TIMING_CYCLES = ["Every 2 days", "Every 3 days", "Weekly", "Every 1
 
 export const bestTouchpoint = (c: CustomerData) => c.aff[0]![0];
 export const formatCurrency = (n: number) => "$" + n.toLocaleString();
+
+export const BRANCH_METADATA: Record<
+  string,
+  {
+    name: string;
+    region: string;
+    manager: string;
+    gradient: string;
+    badgeBg: string;
+    borderGlow: string;
+    accentColor: string;
+  }
+> = {
+  "101": {
+    name: "North Central Hub",
+    region: "Northern Division",
+    manager: "A. Sterling",
+    gradient: "from-blue-600 via-indigo-600 to-violet-700",
+    badgeBg: "bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30",
+    borderGlow: "hover:border-blue-500/60 hover:shadow-blue-500/15",
+    accentColor: "#3b82f6",
+  },
+  "104": {
+    name: "Downtown Metro",
+    region: "Central City",
+    manager: "M. Davis",
+    gradient: "from-violet-600 via-fuchsia-600 to-pink-600",
+    badgeBg: "bg-fuchsia-500/15 text-fuchsia-600 dark:text-fuchsia-400 border-fuchsia-500/30",
+    borderGlow: "hover:border-fuchsia-500/60 hover:shadow-fuchsia-500/15",
+    accentColor: "#d946ef",
+  },
+  "105": {
+    name: "West Valley Center",
+    region: "Western District",
+    manager: "R. Chen",
+    gradient: "from-emerald-600 via-teal-600 to-cyan-600",
+    badgeBg: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30",
+    borderGlow: "hover:border-emerald-500/60 hover:shadow-emerald-500/15",
+    accentColor: "#10b981",
+  },
+  "106": {
+    name: "Eastside Regional",
+    region: "Eastern Sector",
+    manager: "E. Morales",
+    gradient: "from-rose-600 via-red-600 to-orange-600",
+    badgeBg: "bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30",
+    borderGlow: "hover:border-rose-500/60 hover:shadow-rose-500/15",
+    accentColor: "#f43f5e",
+  },
+  "201": {
+    name: "South Corridor",
+    region: "Southern Territory",
+    manager: "J. Vance",
+    gradient: "from-amber-600 via-orange-600 to-red-600",
+    badgeBg: "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30",
+    borderGlow: "hover:border-amber-500/60 hover:shadow-amber-500/15",
+    accentColor: "#f59e0b",
+  },
+  "202": {
+    name: "Airport Gateway",
+    region: "Metro Transit Hub",
+    manager: "K. Patel",
+    gradient: "from-cyan-600 via-sky-600 to-indigo-600",
+    badgeBg: "bg-cyan-500/15 text-cyan-600 dark:text-cyan-400 border-cyan-500/30",
+    borderGlow: "hover:border-cyan-500/60 hover:shadow-cyan-500/15",
+    accentColor: "#06b6d4",
+  },
+};
+
+export const ALL_BRANCH_CODES = ["101", "104", "105", "106", "201", "202"];
+
+const CUSTOMER_BRANCH_KEY = "recoveryops-customer-branch";
+
+export function getStoredCustomerBranch(): string | null {
+  try {
+    return localStorage.getItem(CUSTOMER_BRANCH_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export function setStoredCustomerBranch(code: string | null) {
+  try {
+    if (code) {
+      localStorage.setItem(CUSTOMER_BRANCH_KEY, code);
+    } else {
+      localStorage.removeItem(CUSTOMER_BRANCH_KEY);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
