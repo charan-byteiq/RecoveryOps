@@ -114,141 +114,169 @@ function CustomerBranchOverview() {
       }
     >
       <div className="mx-auto max-w-[1340px] space-y-6">
-        {/* EPIC HERO SECTION WITH HEAVY GRADIENT & HIGH CONTRAST */}
-        <div className="relative overflow-hidden rounded-3xl border border-white/10 bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 p-6 sm:p-8 text-white shadow-2xl">
-          {/* Glowing ambient decorative orbs */}
-          <div className="pointer-events-none absolute -top-24 -left-24 h-72 w-72 rounded-full bg-indigo-500/20 blur-3xl" />
-          <div className="pointer-events-none absolute -bottom-24 -right-24 h-72 w-72 rounded-full bg-fuchsia-500/20 blur-3xl" />
-          <div className="pointer-events-none absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-96 w-96 rounded-full bg-blue-600/10 blur-3xl" />
+        {/* COMPACT & ELEGANT HEADER BAR (NO UNWANTED HERO BANNER) */}
+        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 p-5 rounded-2xl border border-border/80 bg-card shadow-xs">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
+                <Building2 className="size-3.5" /> 6 Recovery Hubs
+              </span>
+              <span className="text-xs text-muted-foreground font-medium">
+                Customer Delinquency & Next Best Action Queues
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">
+              Select Branch Priority Worklist
+            </h2>
+            <p className="text-xs sm:text-sm text-muted-foreground">
+              Click any branch to inspect delinquent borrowers, active outreach cadences, and predictive recovery models.
+            </p>
+          </div>
 
-          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
-            <div className="space-y-2 max-w-2xl">
-              <div className="inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-cyan-300 backdrop-blur-md border border-white/10">
-                <Building2 className="size-3.5 text-cyan-300" /> 6 Operational Recovery Branches
+          {/* NETWORK-WIDE SUMMARY PILLS */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <div className="rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Total Exposure
               </div>
-              <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-white leading-tight">
-                Customer Insights
-              </h2>
-              <p className="text-sm text-slate-300 leading-relaxed font-medium">
-                High-level operational view across all 6 recovery branches. Monitor delinquent customer volume, total exposure, repayment recovery efficiency, and top recommended outreach channels.
-              </p>
+              <div className="text-base font-black text-foreground">
+                ${(totalDelinquentExposure / 1000).toFixed(0)}k
+              </div>
             </div>
 
-            {/* HIGH-CONTRAST METRIC TILES */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 shrink-0">
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-md shadow-lg">
-                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                  Total Delinquent Exposure
-                </div>
-                <div className="mt-1 text-2xl font-black text-white">
-                  ${(totalDelinquentExposure / 1000).toFixed(0)}k
-                </div>
-                <div className="mt-0.5 text-[11px] text-cyan-300 flex items-center gap-1 font-semibold">
-                  <TrendingUp className="size-3" /> Across All 6 Branches
-                </div>
+            <div className="rounded-xl border border-border/80 bg-muted/40 px-3.5 py-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Active Borrowers
               </div>
-
-              <div className="rounded-2xl border border-white/15 bg-white/5 p-4 backdrop-blur-md shadow-lg">
-                <div className="text-[10.5px] font-bold uppercase tracking-wider text-slate-400">
-                  Total Accounts
-                </div>
-                <div className="mt-1 text-2xl font-black text-white">{customers.length}</div>
-                <div className="mt-0.5 text-[11px] text-emerald-400 font-semibold">
-                  Active Delinquent Queue
-                </div>
+              <div className="text-base font-black text-foreground">
+                {customers.length} Accounts
               </div>
+            </div>
 
-              <div className="col-span-2 sm:col-span-1 rounded-2xl border border-rose-500/30 bg-rose-950/20 p-4 backdrop-blur-md shadow-lg">
-                <div className="text-[10.5px] font-bold uppercase tracking-wider text-rose-300">
-                  High Priority Risk
-                </div>
-                <div className="mt-1 text-2xl font-black text-rose-400">{totalHighPriority}</div>
-                <div className="mt-0.5 text-[11px] text-rose-300/80 font-semibold">
-                  Immediate Frontline Action
-                </div>
+            <div className="rounded-xl border border-rose-500/30 bg-rose-500/10 px-3.5 py-2">
+              <div className="text-[10px] font-bold uppercase tracking-wider text-rose-600 dark:text-rose-400">
+                High Priority
+              </div>
+              <div className="text-base font-black text-rose-600 dark:text-rose-400">
+                {totalHighPriority} Immediate
               </div>
             </div>
           </div>
         </div>
 
-        {/* 6 BRANCHES EPIC GRID */}
-        <div>
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h3 className="text-lg font-extrabold text-foreground tracking-tight flex items-center gap-2">
-                <Building2 className="size-5 text-primary" /> Active Branch Population ({branchAggregates.length})
-              </h3>
-              <p className="text-xs text-muted-foreground">
-                Delinquency exposure, recovery efficiency, and top recommended outreach channels by branch
-              </p>
-            </div>
-            <Link
-              to="/worklist"
-              className="text-xs font-bold text-primary hover:underline flex items-center gap-1"
-            >
-              Open Full Priority Worklist <ArrowRight className="size-3.5" />
-            </Link>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {branchAggregates.map((b) => {
-              return (
+        {/* 6 BRANCHES BALANCED & FILLED GRID */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          {branchAggregates.map((b) => {
+            return (
+              <div
+                key={b.code}
+                onClick={() => {
+                  setStoredCustomerBranch(b.code);
+                  navigate({ to: "/worklist", search: { branch: b.code } });
+                }}
+                className={`cursor-pointer group relative overflow-hidden rounded-2xl border border-border/80 bg-card hover:bg-card/95 hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between h-full ${b.meta.borderGlow}`}
+              >
+                {/* Gradient Top Accent Strip */}
                 <div
-                  key={b.code}
-                  onClick={() => {
-                    setStoredCustomerBranch(b.code);
-                    navigate({ to: "/worklist", search: { branch: b.code } });
-                  }}
-                  className={`cursor-pointer group relative overflow-hidden rounded-2xl border border-border/80 bg-card hover:bg-muted/30 transition-all duration-300 shadow-sm ${b.meta.borderGlow} p-6 flex flex-col justify-between`}
-                >
-                  {/* Heavy Gradient Top Accent Strip */}
-                  <div
-                    className={`absolute top-0 left-0 right-0 h-2 bg-gradient-to-r ${b.meta.gradient} transition-all duration-300 group-hover:h-2.5`}
-                  />
+                  className={`absolute top-0 left-0 right-0 h-1.5 bg-gradient-to-r ${b.meta.gradient} transition-all duration-300 group-hover:h-2`}
+                />
 
+                <div className="space-y-4">
+                  {/* Card Header Row: Branch Code + Region + Active Status */}
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-xs font-black px-2.5 py-0.5 rounded-lg bg-foreground text-background">
+                        BR-{b.code}
+                      </span>
+                      <span
+                        className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${b.meta.badgeBg}`}
+                      >
+                        {b.meta.region}
+                      </span>
+                    </div>
+
+                    <span className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-extrabold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      <span className="size-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Active Queue
+                    </span>
+                  </div>
+
+                  {/* Branch Name & Lead */}
                   <div>
-                    {/* Header Row: Branch Code + Status */}
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-xs font-extrabold px-2 py-0.5 rounded-md bg-muted text-foreground border border-border/80">
-                            BR-{b.code}
-                          </span>
-                          <span
-                            className={`text-[10.5px] font-bold px-2 py-0.5 rounded-full border ${b.meta.badgeBg}`}
-                          >
-                            {b.meta.region}
-                          </span>
-                        </div>
-                        <h4 className="text-xl font-black text-foreground mt-3 group-hover:text-primary transition">
-                          {b.meta.name}
-                        </h4>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Branch Lead: <b className="text-foreground">{b.meta.manager}</b>
-                        </p>
-                      </div>
+                    <h3 className="text-lg font-black text-foreground group-hover:text-primary transition tracking-tight">
+                      {b.meta.name}
+                    </h3>
+                    <p className="text-xs text-muted-foreground mt-0.5 flex items-center gap-1.5">
+                      <Users className="size-3.5 text-muted-foreground/70" />
+                      Branch Lead: <span className="font-semibold text-foreground">{b.meta.manager}</span>
+                    </p>
+                  </div>
 
-                      <div className="text-right">
-                        <span className="inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[10.5px] font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                          Active
-                        </span>
+                  {/* Structured 2x2 Operational Metrics Grid */}
+                  <div className="grid grid-cols-2 gap-2.5 pt-1">
+                    <div className="rounded-xl border border-border/60 bg-muted/30 p-2.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Delinquent Exposure
+                      </div>
+                      <div className="text-sm font-black text-foreground mt-0.5">
+                        ${(b.totalExp / 1000).toFixed(0)}k
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border/60 bg-muted/30 p-2.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Borrowers in Queue
+                      </div>
+                      <div className="text-sm font-black text-foreground mt-0.5">
+                        {b.customers.length} Accounts
+                      </div>
+                    </div>
+
+                    <div className={`rounded-xl border p-2.5 ${b.highPriorityCount > 0 ? "border-rose-500/20 bg-rose-500/5 text-rose-600 dark:text-rose-400" : "border-border/60 bg-muted/30 text-foreground"}`}>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        High Priority Risk
+                      </div>
+                      <div className="text-sm font-black mt-0.5">
+                        {b.highPriorityCount > 0 ? `${b.highPriorityCount} Urgent` : "0 Urgent"}
+                      </div>
+                    </div>
+
+                    <div className="rounded-xl border border-border/60 bg-muted/30 p-2.5">
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                        Top Channel
+                      </div>
+                      <div className="text-xs font-bold text-foreground mt-0.5 flex items-center gap-1.5 truncate">
+                        {getChannelIcon(b.topChannel)}
+                        <span className="truncate">{b.topChannel}</span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Bottom Action Strip */}
-                  <div className="mt-5 pt-3.5 border-t border-border/60 flex items-center justify-between text-xs font-semibold">
-                    <span className="text-[11px] text-muted-foreground">
-                      Operational Recovery Queue
-                    </span>
-                    <span className="inline-flex items-center gap-1 rounded-xl bg-primary/10 group-hover:bg-primary group-hover:text-primary-foreground px-3 py-1.5 text-xs font-bold text-primary transition shadow-2xs">
-                      Open Worklist <ArrowRight className="size-3" />
-                    </span>
+                  {/* Payment Coverage Progress Bar */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="flex items-center justify-between text-[11px] font-semibold">
+                      <span className="text-muted-foreground">Avg Payment Coverage</span>
+                      <span className="text-foreground font-bold">{b.avgCov}%</span>
+                    </div>
+                    <div className="h-1.5 w-full rounded-full bg-muted overflow-hidden">
+                      <div
+                        className={`h-full rounded-full bg-gradient-to-r ${b.meta.gradient}`}
+                        style={{ width: `${Math.min(100, b.avgCov)}%` }}
+                      />
+                    </div>
                   </div>
                 </div>
-              );
-            })}
-          </div>
+
+                {/* Card Action Footer Button */}
+                <div className="mt-5 pt-3.5 border-t border-border/60">
+                  <div className="w-full flex items-center justify-between rounded-xl bg-primary/10 group-hover:bg-primary group-hover:text-primary-foreground px-4 py-2.5 text-xs font-bold text-primary transition shadow-2xs">
+                    <span>Open Priority Worklist</span>
+                    <ArrowRight className="size-3.5 transition group-hover:translate-x-0.5" />
+                  </div>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </AppShell>
