@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useMemo, useState, useEffect, useRef } from "react";
+import { useMemo } from "react";
 import { AppShell } from "@/components/app-shell";
 import {
   Building2,
@@ -36,6 +36,8 @@ interface BranchAggregate {
   avgCov: number;
   reachedCount: number;
   outreachPct: number;
+  recoveredAmt: number;
+  attainmentPct: number;
 }
 
 function BranchCard({
@@ -45,39 +47,8 @@ function BranchCard({
   b: BranchAggregate;
   onSelect: () => void;
 }) {
-  const cardRef = useRef<HTMLDivElement>(null);
-  const [scrollFactor, setScrollFactor] = useState(0.85);
-
-  useEffect(() => {
-    let ticking = false;
-    const handleScroll = () => {
-      if (!ticking) {
-        window.requestAnimationFrame(() => {
-          if (!cardRef.current) return;
-          const rect = cardRef.current.getBoundingClientRect();
-          const winHeight = window.innerHeight || document.documentElement.clientHeight;
-          // Dynamically compute viewport scroll progress for live reactive progress bars
-          const viewportRatio = (winHeight - rect.top) / (winHeight + rect.height);
-          const clamped = Math.max(0.65, Math.min(1, 0.65 + viewportRatio * 0.35));
-          setScrollFactor(clamped);
-          ticking = false;
-        });
-        ticking = true;
-      }
-    };
-
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    handleScroll();
-    return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
-
-  // Live dynamic width moving with scroll
-  const liveOutreach = Math.round(b.outreachPct * scrollFactor);
-  const livePayment = Math.round(b.avgCov * scrollFactor);
-
   return (
     <div
-      ref={cardRef}
       onClick={onSelect}
       className={`cursor-pointer group relative overflow-hidden rounded-2xl border border-border/80 bg-card hover:bg-card/95 hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between h-full ${b.meta.borderGlow}`}
     >
@@ -118,60 +89,57 @@ function BranchCard({
         </div>
 
         {/* 2 CLEAN DPD METRIC CARDS */}
-        <div className="grid grid-cols-2 gap-3 pt-1">
-          <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+        <div className="grid grid-cols-2 gap-3 pt-2">
+          <div className="rounded-xl border border-border/80 bg-muted/40 p-4 flex flex-col justify-between">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               DPD Amount
             </div>
-            <div className="text-lg font-black text-foreground mt-1">
+            <div className="text-xl font-black text-foreground mt-1.5 tracking-tight">
               ${b.totalExp.toLocaleString()}
+            </div>
+            <div className="text-[10.5px] font-medium text-muted-foreground mt-1.5">
+              Active Delinquency
             </div>
           </div>
 
-          <div className="rounded-xl border border-border/70 bg-muted/40 p-3.5">
+          <div className="rounded-xl border border-border/80 bg-muted/40 p-4 flex flex-col justify-between">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               DPD Accounts
             </div>
-            <div className="text-lg font-black text-foreground mt-1">
+            <div className="text-xl font-black text-foreground mt-1.5 tracking-tight">
               {b.customers.length} Accounts
+            </div>
+            <div className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
+              Priority Worklist
             </div>
           </div>
         </div>
 
-        {/* 2 LIVE SCROLL-ANIMATED PROGRESS BARS */}
-        <div className="space-y-3 pt-1">
-          {/* Bar 1: Agent Outreach (Customers Reached) */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-semibold">
-              <span className="text-muted-foreground">Agent Outreach</span>
-              <span className="text-foreground font-bold">
-                {b.reachedCount} / {b.customers.length} Reached ({b.outreachPct}%)
-              </span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted/80 overflow-hidden relative">
-              <div
-                className={`h-full rounded-full bg-gradient-to-r ${b.meta.gradient} transition-all duration-500 ease-out relative`}
-                style={{ width: `${Math.min(100, liveOutreach)}%` }}
-              >
-                <div className="absolute inset-0 bg-white/20 animate-pulse" />
+        {/* RECOVERY ATTAINMENT BAR UNDER THE 2 DPD METRIC CARDS */}
+        <div className="rounded-xl border border-border/80 bg-muted/30 p-3.5 space-y-2.5">
+          <div className="flex items-center justify-between text-xs">
+            <div>
+              <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                Recovery Attainment
               </div>
+              <div className="text-sm font-black text-foreground mt-0.5">
+                ${b.recoveredAmt.toLocaleString()}{" "}
+                <span className="text-[11px] font-medium text-muted-foreground">recovered</span>
+              </div>
+            </div>
+            <div className="text-right">
+              <span className="inline-flex items-center rounded-md bg-emerald-500/10 px-2 py-0.5 text-xs font-black text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                {b.attainmentPct}% Attained
+              </span>
             </div>
           </div>
 
-          {/* Bar 2: Payment Fulfillment */}
-          <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-[11px] font-semibold">
-              <span className="text-muted-foreground">Payment Fulfillment</span>
-              <span className="text-foreground font-bold">{b.avgCov}%</span>
-            </div>
-            <div className="h-2 w-full rounded-full bg-muted/80 overflow-hidden relative">
-              <div
-                className={`h-full rounded-full bg-gradient-to-r ${b.meta.gradient} transition-all duration-500 ease-out relative`}
-                style={{ width: `${Math.min(100, livePayment)}%` }}
-              >
-                <div className="absolute inset-0 bg-white/20 animate-pulse" />
-              </div>
-            </div>
+          {/* Attainment Fill Bar */}
+          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+            <div
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-500"
+              style={{ width: `${Math.min(100, Math.max(0, b.attainmentPct))}%` }}
+            />
           </div>
         </div>
       </div>
@@ -216,6 +184,13 @@ function CustomerBranchOverview() {
         ? Math.round((reachedCount / bCustomers.length) * 100)
         : 0;
 
+      // Recovered amount and attainment %
+      const recoveredAmt = bCustomers.reduce(
+        (sum, c) => sum + Math.round((c.exp * c.cov) / 100),
+        0
+      );
+      const attainmentPct = totalExp > 0 ? Math.round((recoveredAmt / totalExp) * 100) : 0;
+
       return {
         code,
         meta,
@@ -224,6 +199,8 @@ function CustomerBranchOverview() {
         avgCov,
         reachedCount,
         outreachPct,
+        recoveredAmt,
+        attainmentPct,
       };
     });
   }, [customers]);
@@ -254,9 +231,6 @@ function CustomerBranchOverview() {
             <div className="flex items-center gap-2">
               <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-0.5 text-xs font-bold text-primary border border-primary/20">
                 <Building2 className="size-3.5" /> 6 Recovery Hubs
-              </span>
-              <span className="text-xs text-muted-foreground font-medium">
-                Customer Delinquency & Next Best Action Queues
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black tracking-tight text-foreground">

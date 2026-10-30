@@ -71,7 +71,7 @@ export function AppShell({
     activeCustomerBranchCode && BRANCH_METADATA[activeCustomerBranchCode]
       ? {
           code: activeCustomerBranchCode,
-          name: BRANCH_METADATA[activeCustomerBranchCode].name,
+          name: BRANCH_METADATA[activeCustomerBranchCode]!.name,
         }
       : null;
 

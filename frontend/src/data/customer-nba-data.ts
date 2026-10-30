@@ -29,7 +29,7 @@ export interface CustomerData {
 }
 
 const raw =
-  "C011,Matthew Thomas,RL-13102,201,63,47088,High,Due soon|C004,Emily Rodriguez,RL-11203,104,59,41888,High,Due soon|C009,Christopher Martinez,RL-12304,106,51,35088,High,None|C006,Sarah Anderson,AL-30552,101,43,27688,High,None|C008,Amanda Thompson,PL-21056,105,39,30488,High,Due soon|C014,Megan Harris,AL-31204,201,38,21988,High,Due soon|C001,Michael Carter,AL-10482,101,28,23588,Medium,Due soon|C007,James Wilson,RL-11782,104,26,18588,Medium,Kept before|C012,Olivia Hernandez,PL-22890,202,26,13288,Medium,None|C002,Daniel Lee,AL-10931,101,22,9800,Medium,Kept before|C003,Priya Nair,PL-20417,105,18,8400,Medium,None|C005,Robert King,RL-11990,106,14,7200,Low,Kept before|C010,Linda Gomez,AL-10655,202,11,6100,Low,None|C013,Arjun Mehta,PL-20988,104,9,4300,Low,Kept before|C015,Hannah Brooks,AL-10771,101,6,2900,Low,None|C016,Tom Reyes,RL-12011,201,3,1800,Low,None";
+  "C011,Matthew Thomas,RL-13102,201,93,47088,High,Due soon|C004,Emily Rodriguez,RL-11203,104,59,41888,High,Due soon|C009,Christopher Martinez,RL-12304,106,51,35088,High,None|C006,Sarah Anderson,AL-30552,101,43,27688,High,None|C008,Amanda Thompson,PL-21056,105,39,30488,High,Due soon|C014,Megan Harris,AL-31204,201,38,21988,High,Due soon|C001,Michael Carter,AL-10482,101,28,23588,Medium,Due soon|C007,James Wilson,RL-11782,104,26,18588,Medium,Kept before|C012,Olivia Hernandez,PL-22890,202,26,13288,Medium,None|C002,Daniel Lee,AL-10931,101,22,9800,Medium,Kept before|C003,Priya Nair,PL-20417,105,18,8400,Medium,None|C005,Robert King,RL-11990,106,14,7200,Low,Kept before|C010,Linda Gomez,AL-10655,202,11,6100,Low,None|C013,Arjun Mehta,PL-20988,104,9,4300,Low,Kept before|C015,Hannah Brooks,AL-10771,101,6,2900,Low,None|C016,Tom Reyes,RL-12011,201,0,1800,Low,None|C017,Jason Miller,AL-10884,101,0,3400,Low,Due soon";
 
 export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
   const parts = r.split(",");
@@ -41,31 +41,28 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
   const exp = +parts[5]!;
   const risk = parts[6]!;
   const ptp = parts[7]!;
-
   const reach = Math.max(10, Math.round(70 - dpd * 0.8 + (i % 3) * 6));
-  const ph = Math.max(15, Math.round(reach + 18 - (i % 4) * 3));
-  const em = Math.max(8, Math.round(reach * 0.5 + (i % 5)));
-  const fv = dpd >= 30 ? 85 : null;
+
+  // Balanced channel preference across Phone, Mails, and Field Visit:
+  // Daniel Lee (C002), Hannah Brooks (C015), Tom Reyes (C016), Linda Gomez (C010) prefer Digital Mail
+  // Sarah Anderson (C006), Emily Rodriguez (C004), Matthew Thomas (C011), Jason Miller (C017) prefer Field Visit
+  // Michael Carter (C001), Amanda Thompson (C008), James Wilson (C007) prefer Direct Phone
+  const isMailPreferred = id === "C002" || id === "C015" || id === "C016" || id === "C010" || id === "C003";
+  const isFieldPreferred = (dpd >= 35 && (id === "C006" || id === "C004" || id === "C011")) || id === "C017";
+
+  const phScore = isFieldPreferred ? 55 : isMailPreferred ? 45 : 78;
+  const emScore = isMailPreferred ? 84 : 42;
+  const fvScore = isFieldPreferred ? 88 : dpd >= 30 ? 65 : 25;
 
   const ch: [string, number][] = [
-    ["Direct Phone", ph],
-    ["Digital Mail", em],
+    ["Phone calls", phScore],
+    ["Mails", emScore],
   ];
-  if (fv) ch.push(["Field Visit", fv]);
+  if (dpd >= 30 || isFieldPreferred) {
+    ch.push(["Field Visit", fvScore]);
+  }
 
-  const aff: [string, number][] = ch
-    .map(
-      ([n, s]) =>
-        [
-          n,
-          Math.round(
-            s * 0.7 +
-              (n === "Field Visit" ? (dpd - 30) * 0.5 : 0) +
-              (n === "Direct Phone" ? 4 : 0),
-          ),
-        ] as [string, number],
-    )
-    .sort((a, b) => b[1] - a[1]);
+  const aff: [string, number][] = [...ch].sort((a, b) => b[1] - a[1]);
 
   const cov = Math.round(50 - dpd * 0.4 + (i % 4) * 8);
   const last = dpd + Math.round(dpd * 0.3);
@@ -119,14 +116,10 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
       methodAttempts[n] = { attempts: 0, success: 0 };
     });
   } else {
-    const phAtt = Math.max(1, Math.round(touches * 0.55));
-    const emAtt = Math.max(1, Math.round(touches * 0.35));
-    const fvAtt = fv ? Math.max(1, touches - phAtt - emAtt) : 0;
-    methodAttempts["Direct Phone"] = { attempts: phAtt, success: Math.min(phAtt, Math.round(phAtt * 0.6)) };
-    methodAttempts["Digital Mail"] = { attempts: emAtt, success: Math.min(emAtt, Math.round(emAtt * 0.4)) };
-    if (fv) {
-      methodAttempts["Field Visit"] = { attempts: Math.max(1, fvAtt), success: 1 };
-    }
+    const phAtt = Math.max(1, Math.round(touches * 0.6));
+    const emAtt = Math.max(1, touches - phAtt);
+    methodAttempts["Phone calls"] = { attempts: phAtt, success: Math.min(phAtt, Math.round(phAtt * 0.6)) };
+    methodAttempts["Mails"] = { attempts: emAtt, success: Math.min(emAtt, Math.round(emAtt * 0.4)) };
   }
 
   // Repayment behavior analysis
@@ -167,7 +160,7 @@ export const CUSTOMERS: CustomerData[] = raw.split("|").map((r, i) => {
 
 CUSTOMERS.sort((a, b) => b.pri - a.pri);
 
-export const TOUCHPOINT_METHODS = ["Direct Phone", "Digital Mail", "Field Visit"];
+export const TOUCHPOINT_METHODS = ["Phone calls", "Mails", "Field Visit"];
 
 export const TEMPLATES = [
   "Settlement Offer Template",
