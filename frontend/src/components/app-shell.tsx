@@ -239,6 +239,18 @@ export function AppShell({
               </div>
               <div className="space-y-0.5">
                 <Link
+                  to="/customer-analytics"
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
+                    pathname === "/customer-analytics"
+                      ? "bg-primary/10 text-primary ring-1 ring-primary/15 font-semibold"
+                      : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
+                  }`}
+                  onClick={() => setOpen(false)}
+                >
+                  <LayoutDashboard className="size-4" />
+                  <span>Overview</span>
+                </Link>
+                <Link
                   to="/worklist"
                   className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
                     pathname === "/worklist" || pathname.startsWith("/customers/")
@@ -249,18 +261,6 @@ export function AppShell({
                 >
                   <ListChecks className="size-4" />
                   <span>Priority Worklist</span>
-                </Link>
-                <Link
-                  to="/customer-analytics"
-                  className={`flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition ${
-                    pathname === "/customer-analytics"
-                      ? "bg-primary/10 text-primary ring-1 ring-primary/15 font-semibold"
-                      : "text-muted-foreground hover:bg-card/70 hover:text-foreground"
-                  }`}
-                  onClick={() => setOpen(false)}
-                >
-                  <Users className="size-4" />
-                  <span>Customer Portfolios</span>
                 </Link>
               </div>
             </div>

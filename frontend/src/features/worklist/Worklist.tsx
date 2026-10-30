@@ -120,7 +120,7 @@ export function Worklist() {
           <div className="flex flex-wrap items-baseline justify-between gap-2">
             <div>
               <h2 className="text-lg font-bold bg-gradient-to-r from-violet-600 to-pink-600 bg-clip-text text-transparent">
-                Prioritised customer list
+                Customer list
               </h2>
               <p className="text-xs text-muted-foreground mt-0.5">
                 Suggested engagement template, communication preference, and follow-up timing for each borrower.
