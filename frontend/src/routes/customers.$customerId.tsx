@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import {
   ArrowLeft,
@@ -24,6 +24,8 @@ import {
   AlertTriangle,
   Copy,
   ChevronRight,
+  ChevronDown,
+  ChevronUp,
   Calendar,
   AlertCircle,
   ClipboardCheck,
@@ -37,6 +39,7 @@ import {
   User,
 } from "lucide-react";
 import { AppShell } from "@/components/app-shell";
+import { AnimatedKpi } from "@/components/ui/animated-kpi";
 import { CUSTOMERS, bestTouchpoint, type CustomerData } from "@/data/customer-nba-data";
 import { getCustomerDetailContext } from "@/data/mock-data";
 
@@ -262,6 +265,13 @@ function CustomerDetailView() {
       ? `Stable at ${c.dpd} DPD compared to 30d baseline`
       : `${d30Dpd} DPD (30d prior) → ${c.dpd} DPD current`;
 
+  const [animateLiveBars, setAnimateLiveBars] = useState<boolean>(false);
+  useEffect(() => {
+    setAnimateLiveBars(false);
+    const t = setTimeout(() => setAnimateLiveBars(true), 60);
+    return () => clearTimeout(t);
+  }, [c.id, c.cov, paymentSuccessRate, activeChannel.successRate]);
+
   const [timelineList, setTimelineList] = useState([
     {
       title: `${bestTouchpoint(c)} outreach`,
@@ -322,6 +332,8 @@ function CustomerDetailView() {
   const [ptpDateInput, setPtpDateInput] = useState<string>("2026-11-05");
   const [ptpPaymentMode, setPtpPaymentMode] = useState<string>("UPI / Instant Transfer");
   const [feedbackNotes, setFeedbackNotes] = useState<string>("");
+  const [notesOpen, setNotesOpen] = useState<boolean>(true);
+  const [responseSectionOpen, setResponseSectionOpen] = useState<boolean>(true);
 
   // Action Taken: NO states
   const [notTakenReason, setNotTakenReason] = useState<string>("Customer Travel / Out of Station");
@@ -923,7 +935,7 @@ function CustomerDetailView() {
                 </span>
                 <div className="mt-1.5 flex items-baseline justify-between">
                   <span className="text-xl font-black text-foreground">
-                    ${c.exp.toLocaleString()}
+                    <AnimatedKpi value={c.exp} prefix="$" />
                   </span>
                   <span
                     className={`rounded-md px-1.5 py-0.5 text-[9.5px] font-bold ${
@@ -958,7 +970,7 @@ function CustomerDetailView() {
                           : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
-                    {c.cov}%
+                    <AnimatedKpi value={c.cov} suffix="%" />
                   </span>
                   <span
                     className={`text-[10.5px] font-bold ${
@@ -974,10 +986,10 @@ function CustomerDetailView() {
                 </div>
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
                       c.cov >= 70 ? "bg-emerald-500" : c.cov >= 40 ? "bg-amber-500" : "bg-rose-500"
                     }`}
-                    style={{ width: `${Math.min(100, c.cov)}%` }}
+                    style={{ width: animateLiveBars ? `${Math.min(100, c.cov)}%` : "0%" }}
                   />
                 </div>
               </div>
@@ -999,7 +1011,7 @@ function CustomerDetailView() {
                           : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
-                    {paymentSuccessRate}%
+                    <AnimatedKpi value={paymentSuccessRate} suffix="%" />
                   </span>
                   <span className="text-[10.5px] font-semibold text-muted-foreground">
                     {c.pays} of {Math.max(1, c.pays + (c.cov < 100 ? 1 : 0))} fulfilled
@@ -1007,14 +1019,14 @@ function CustomerDetailView() {
                 </div>
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
                       paymentSuccessRate >= 70
                         ? "bg-emerald-500"
                         : paymentSuccessRate >= 40
                           ? "bg-amber-500"
                           : "bg-rose-500"
                     }`}
-                    style={{ width: `${Math.min(100, paymentSuccessRate)}%` }}
+                    style={{ width: animateLiveBars ? `${Math.min(100, paymentSuccessRate)}%` : "0%" }}
                   />
                 </div>
               </div>
@@ -1036,7 +1048,7 @@ function CustomerDetailView() {
                           : "text-rose-600 dark:text-rose-400"
                     }`}
                   >
-                    {activeChannel.successRate}%
+                    <AnimatedKpi value={activeChannel.successRate} suffix="%" />
                   </span>
                   <span className="text-[10.5px] font-semibold text-muted-foreground">
                     {activeChannel.name}
@@ -1044,14 +1056,14 @@ function CustomerDetailView() {
                 </div>
                 <div className="mt-2 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                   <div
-                    className={`h-full rounded-full transition-all duration-500 ${
+                    className={`h-full rounded-full transition-all duration-1000 ease-out ${
                       activeChannel.successRate >= 65
                         ? "bg-emerald-500"
                         : activeChannel.successRate >= 45
                           ? "bg-amber-500"
                           : "bg-rose-500"
                     }`}
-                    style={{ width: `${Math.min(100, activeChannel.successRate)}%` }}
+                    style={{ width: animateLiveBars ? `${Math.min(100, activeChannel.successRate)}%` : "0%" }}
                   />
                 </div>
               </div>
@@ -1098,70 +1110,129 @@ function CustomerDetailView() {
                 </div>
 
                 {/* Vertical timeline distributing events across vertical space */}
-                <div className="relative border-l-2 border-border/80 ml-3 pl-4 flex-1 flex flex-col justify-between py-1.5 space-y-3.5">
-                  {timelineList.map((item, i) => (
-                    <div
-                      key={i}
-                      onClick={() => setActiveTimelineStep(i)}
-                      className={`relative rounded-xl border p-3.5 text-xs transition cursor-pointer ${
-                        i === activeTimelineStep
-                          ? "border-red-500/60 bg-red-500/5 shadow-xs ring-1 ring-red-500/30"
-                          : "border-border/60 bg-muted/20 hover:bg-muted/30"
-                      }`}
-                    >
-                      {/* Timeline bullet dot / Moving Person Icon Notation in Red */}
-                      {i === activeTimelineStep ? (
-                        <div
-                          className="absolute -left-[28px] top-3 z-20 flex items-center justify-center transition-all duration-500 ease-out"
-                          title="Current Live Position"
-                        >
-                          <span className="absolute size-7 rounded-full bg-red-500/35 animate-ping" />
-                          <div className="size-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md ring-2 ring-card scale-110">
-                            <User className="size-3.5 stroke-[2.5]" />
+                <div className="relative border-l-2 border-border/70 ml-3 pl-4 flex-1 flex flex-col justify-between py-1.5 space-y-3.5">
+                  {timelineList.map((item, i) => {
+                    const isCurrent = i === activeTimelineStep;
+                    const isCompleted = i < activeTimelineStep;
+
+                    return (
+                      <div
+                        key={i}
+                        onClick={() => setActiveTimelineStep(i)}
+                        style={
+                          isCurrent
+                            ? {
+                                background: "linear-gradient(135deg, #FF007F 0%, #0B001A 50%, #00F0FF 100%)",
+                                color: "#ffffff",
+                                boxShadow: "0 0 15px rgba(255, 0, 127, 0.3), 0 0 15px rgba(0, 240, 255, 0.3)",
+                                borderColor: "rgba(255, 0, 127, 0.6)",
+                              }
+                            : undefined
+                        }
+                        className={`relative rounded-xl border p-3.5 text-xs transition-all duration-300 cursor-pointer ${
+                          isCurrent
+                            ? "scale-[1.01]"
+                            : isCompleted
+                              ? "border-emerald-500/35 bg-gradient-to-r from-emerald-500/[0.08] via-teal-500/[0.04] to-card/90 dark:from-emerald-500/[0.14] dark:to-card/80 shadow-xs ring-1 ring-emerald-500/20 hover:border-emerald-500/50"
+                              : "border-border/60 bg-gradient-to-r from-muted/25 via-muted/15 to-card/60 hover:bg-muted/40 hover:border-border"
+                        }`}
+                      >
+                        {/* Progress line overlay for completed stages */}
+                        {isCompleted && (
+                          <span className="absolute -left-[18px] top-3 -bottom-3.5 w-0.5 bg-emerald-500 z-10 transition-all duration-500" />
+                        )}
+
+                        {/* Node: Current (Red Person) vs Completed (Green Check) vs Upcoming (Neutral Dot) */}
+                        {isCurrent ? (
+                          <div
+                            className="absolute -left-[28px] top-3 z-20 flex items-center justify-center transition-all duration-500 ease-out"
+                            title="Current Active Stage"
+                          >
+                            <span className="absolute size-7 rounded-full bg-red-500/35 animate-ping" />
+                            <div className="size-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md ring-2 ring-card scale-110">
+                              <User className="size-3.5 stroke-[2.5]" />
+                            </div>
+                          </div>
+                        ) : isCompleted ? (
+                          <div
+                            className="absolute -left-[28px] top-3 z-20 flex items-center justify-center transition-all duration-500 ease-out"
+                            title="Completed Stage"
+                          >
+                            <div className="size-6 rounded-full bg-emerald-600 text-white flex items-center justify-center shadow-sm ring-2 ring-card hover:scale-110 transition-transform">
+                              <Check className="size-3.5 stroke-[3]" />
+                            </div>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveTimelineStep(i);
+                            }}
+                            title="Click to jump active collector position here"
+                            className="absolute -left-[23px] top-4 size-2.5 rounded-full border-2 border-card cursor-pointer hover:scale-150 transition-all bg-slate-400 dark:bg-slate-600 hover:bg-primary"
+                          />
+                        )}
+
+                        {/* Card Title & Top-Right Live/Status Badge */}
+                        <div className="flex items-start justify-between gap-2 flex-wrap">
+                          <div
+                            className={`font-bold text-xs leading-snug flex-1 ${
+                              isCurrent ? "text-white" : "text-foreground"
+                            }`}
+                          >
+                            {item.title}
+                          </div>
+
+                          <div className="flex items-center gap-2 shrink-0">
+                            {/* Live Badge in Red on Top Right for Current Stage */}
+                            {isCurrent && (
+                              <span className="inline-flex items-center gap-1.5 rounded-full bg-red-500/20 border border-red-400/40 px-2.5 py-0.5 text-[9.5px] font-black uppercase tracking-wider text-red-200 shadow-xs">
+                                <span className="size-1.5 rounded-full bg-red-500 animate-pulse" /> LIVE
+                              </span>
+                            )}
+
+                            {/* Completed Status Pill for Completed Stages */}
+                            {isCompleted && (
+                              <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[9px] font-bold text-emerald-600 dark:text-emerald-400">
+                                <Check className="size-2.5 stroke-[3]" /> Completed
+                              </span>
+                            )}
+
+                            <span className={`text-[11px] ${isCurrent ? "text-white/80" : "text-muted-foreground"}`}>
+                              {item.time}
+                            </span>
                           </div>
                         </div>
-                      ) : (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setActiveTimelineStep(i);
-                          }}
-                          title="Click to move person icon here"
-                          className={`absolute -left-[23px] top-4 size-2.5 rounded-full border-2 border-card cursor-pointer hover:scale-150 transition-all ${
-                            item.category === "Next Best Action" ? "bg-emerald-500" : "bg-primary"
-                          }`}
-                        />
-                      )}
 
-                      {/* Live Person Notation Banner in Red */}
-                      {i === activeTimelineStep && (
-                        <div className="mb-2 flex items-center justify-between gap-1.5 rounded-lg bg-red-500/10 border border-red-500/25 px-2.5 py-1 text-[10.5px] font-bold text-red-600 dark:text-red-400">
-                          <span className="flex items-center gap-1.5">
-                            <User className="size-3 text-red-600 dark:text-red-400" />
-                            <span>Current Position · Collector Active Here</span>
+                        {/* Original Category & Status Badges */}
+                        <div className="mt-2.5 flex items-center gap-1.5 flex-wrap">
+                          <span
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                              isCurrent
+                                ? "bg-white/15 text-white border border-white/25 backdrop-blur-xs"
+                                : item.category === "Next Best Action"
+                                  ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20"
+                                  : "bg-primary/10 text-primary"
+                            }`}
+                          >
+                            {item.category}
                           </span>
-                          <span className="flex items-center gap-1 text-[9.5px] uppercase tracking-wider text-red-600 dark:text-red-400 font-black">
-                            <span className="size-1.5 rounded-full bg-red-600 animate-pulse" /> Live
+                          <span
+                            className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${
+                              isCurrent
+                                ? "bg-white/15 text-white border border-white/25 backdrop-blur-xs"
+                                : isCompleted
+                                  ? "bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25"
+                                  : "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                            }`}
+                          >
+                            {item.status}
                           </span>
                         </div>
-                      )}
-
-                      <div className="flex items-start justify-between gap-2 flex-wrap">
-                        <div className="font-bold text-foreground text-xs leading-snug">{item.title}</div>
-                        <span className="text-[11px] text-muted-foreground shrink-0">{item.time}</span>
                       </div>
-
-                      <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                        <span className={`rounded-md px-2 py-0.5 text-[10px] font-semibold ${item.category === "Next Best Action" ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20" : "bg-primary/10 text-primary"}`}>
-                          {item.category}
-                        </span>
-                        <span className="rounded-md bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400">
-                          {item.status}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
 
@@ -1384,7 +1455,7 @@ function CustomerDetailView() {
                           </span>
                         </div>
                         <div className="mt-1.5 text-xl font-black text-foreground tracking-tight">
-                          ${recoveredAmount.toLocaleString()}
+                          <AnimatedKpi value={recoveredAmount} prefix="$" />
                         </div>
                         <div className="mt-1 text-[11px] text-muted-foreground">
                           of <b className="text-foreground">${c.exp.toLocaleString()}</b> balance ({c.cov}% coverage)
@@ -1392,10 +1463,10 @@ function CustomerDetailView() {
                       </div>
                       <div className="mt-2.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
                             c.cov >= 60 ? "bg-emerald-500" : c.cov >= 20 ? "bg-amber-500" : "bg-rose-500"
                           }`}
-                          style={{ width: `${Math.min(100, c.cov)}%` }}
+                          style={{ width: animateLiveBars ? `${Math.min(100, c.cov)}%` : "0%" }}
                         />
                       </div>
                     </div>
@@ -1454,7 +1525,7 @@ function CustomerDetailView() {
                           </span>
                         </div>
                         <div className="mt-1.5 text-xl font-black text-foreground tracking-tight">
-                          {paymentSuccessRate}%
+                          <AnimatedKpi value={paymentSuccessRate} suffix="%" />
                         </div>
                         <div className="mt-1 text-[11px] text-muted-foreground">
                           <b className="text-foreground">{c.pays}</b> of {Math.max(1, c.pays + (c.cov < 100 ? 1 : 0))} payments fulfilled
@@ -1462,14 +1533,14 @@ function CustomerDetailView() {
                       </div>
                       <div className="mt-2.5 h-1.5 w-full rounded-full bg-muted overflow-hidden">
                         <div
-                          className={`h-full rounded-full transition-all duration-500 ${
+                          className={`h-full rounded-full transition-all duration-1000 ease-out ${
                             paymentSuccessRate >= 70
                               ? "bg-emerald-500"
                               : paymentSuccessRate >= 40
                                 ? "bg-amber-500"
                                 : "bg-rose-500"
                           }`}
-                          style={{ width: `${Math.min(100, paymentSuccessRate)}%` }}
+                          style={{ width: animateLiveBars ? `${Math.min(100, paymentSuccessRate)}%` : "0%" }}
                         />
                       </div>
                     </div>
@@ -1594,18 +1665,18 @@ function CustomerDetailView() {
         </div>
       </div>
 
-      {/* OUTCOME & RECOVERY FEEDBACK POPUP MODAL (MATCHING IMAGE 2 POPUP STYLE) */}
+      {/* OUTCOME & RECOVERY FEEDBACK POPUP MODAL (HORIZONTAL SINGLE-SCREEN EXECUTIVE LAYOUT) */}
       {drawerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4">
           <button
             aria-label="Close outcome popup modal backdrop"
             className="absolute inset-0 bg-foreground/30 backdrop-blur-xs transition"
             onClick={() => setDrawerOpen(false)}
           />
 
-          <div className="relative w-full max-w-xl rounded-2xl border border-border/80 bg-white dark:bg-card p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+          <div className="relative w-full max-w-4xl lg:max-w-5xl rounded-2xl border border-border/80 bg-white dark:bg-card p-4 sm:p-5 shadow-2xl space-y-3.5 max-h-[92vh] overflow-y-auto">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-border/70 pb-3">
+            <div className="flex items-center justify-between border-b border-border/70 pb-2.5">
               <div className="space-y-0.5">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-primary">
                   Frontline Outreach Execution
@@ -1616,15 +1687,15 @@ function CustomerDetailView() {
               </div>
               <button
                 type="button"
-                className="size-8 rounded-lg hover:bg-muted grid place-items-center cursor-pointer text-muted-foreground hover:text-foreground"
+                className="size-8 rounded-lg hover:bg-muted grid place-items-center cursor-pointer text-muted-foreground hover:text-foreground transition"
                 onClick={() => setDrawerOpen(false)}
               >
                 <X className="size-4" />
               </button>
             </div>
 
-            {/* Account Quick Summary Banner (Matches Image 2) */}
-            <div className="rounded-xl border border-border/70 bg-muted/30 p-3 text-xs flex justify-between items-center gap-2">
+            {/* Account Quick Summary Banner */}
+            <div className="rounded-xl border border-border/70 bg-muted/30 p-2.5 sm:p-3 text-xs flex justify-between items-center gap-2">
               <div>
                 <span className="font-bold text-foreground">{c.name}</span> ({c.acct})
                 <div className="text-[11px] text-muted-foreground mt-0.5">
@@ -1636,478 +1707,531 @@ function CustomerDetailView() {
               </span>
             </div>
 
-            {/* Step 1: Communication Channel Cards (Matches Image 2 Style) */}
-            <div className="space-y-2">
-              <label className="block text-[11px] font-semibold text-muted-foreground">
-                Select Communication Channel (Only Supported Recovery Channels)
-              </label>
+            {/* Horizontal Two-Column Body for Single-Screen Alignment */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 items-start">
+              {/* LEFT COLUMN: Communication Channels & Direct Disposition/Response */}
+              <div className="space-y-3">
+                {/* Step 1: Communication Channel Cards */}
+                <div className="space-y-2">
+                  <label className="block text-[11px] font-semibold text-muted-foreground">
+                    Select Communication Channel (Only Supported Recovery Channels)
+                  </label>
 
-              <div className="space-y-2">
-                {[
-                  {
-                    code: "PHONE" as const,
-                    label: "Phone Call",
-                    icon: Phone,
-                    successRate: 55,
-                    responseRate: 32,
-                    isPrescribed:
-                      primaryRecommendation.name.toLowerCase().includes("call") ||
-                      primaryRecommendation.name.toLowerCase().includes("phone"),
-                  },
-                  {
-                    code: "MAIL" as const,
-                    label: "Email",
-                    icon: Mail,
-                    successRate: 42,
-                    responseRate: 22,
-                    isPrescribed:
-                      primaryRecommendation.name.toLowerCase().includes("mail") ||
-                      primaryRecommendation.name.toLowerCase().includes("email"),
-                  },
-                  {
-                    code: "FIELD" as const,
-                    label: "Field Visit",
-                    icon: MapPin,
-                    successRate: 88,
-                    responseRate: 34,
-                    isPrescribed:
-                      primaryRecommendation.name.toLowerCase().includes("field") ||
-                      primaryRecommendation.name.toLowerCase().includes("visit"),
-                  },
-                ].map((ch) => {
-                  const isSelected = feedbackChannel === ch.code;
-                  return (
-                    <div
-                      key={ch.code}
-                      onClick={() => setFeedbackChannel(ch.code)}
-                      className={`rounded-xl border p-3.5 cursor-pointer transition flex items-center justify-between gap-3 ${
-                        isSelected
-                          ? "border-primary bg-primary/10 shadow-xs"
-                          : "border-border/70 bg-muted/20 hover:bg-muted/40"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
+                  <div className="space-y-2">
+                    {[
+                      {
+                        code: "PHONE" as const,
+                        label: "Phone Call",
+                        icon: Phone,
+                        successRate: 55,
+                        responseRate: 32,
+                        isPrescribed:
+                          primaryRecommendation.name.toLowerCase().includes("call") ||
+                          primaryRecommendation.name.toLowerCase().includes("phone"),
+                      },
+                      {
+                        code: "MAIL" as const,
+                        label: "Email",
+                        icon: Mail,
+                        successRate: 42,
+                        responseRate: 22,
+                        isPrescribed:
+                          primaryRecommendation.name.toLowerCase().includes("mail") ||
+                          primaryRecommendation.name.toLowerCase().includes("email"),
+                      },
+                      {
+                        code: "FIELD" as const,
+                        label: "Field Visit",
+                        icon: MapPin,
+                        successRate: 88,
+                        responseRate: 34,
+                        isPrescribed:
+                          primaryRecommendation.name.toLowerCase().includes("field") ||
+                          primaryRecommendation.name.toLowerCase().includes("visit"),
+                      },
+                    ].map((ch) => {
+                      const isSelected = feedbackChannel === ch.code;
+                      return (
                         <div
-                          className={`size-9 rounded-lg grid place-items-center ${
+                          key={ch.code}
+                          onClick={() => setFeedbackChannel(ch.code)}
+                          className={`rounded-xl border p-2.5 sm:p-3 cursor-pointer transition flex items-center justify-between gap-2.5 ${
                             isSelected
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted text-muted-foreground"
+                              ? "border-primary bg-primary/10 shadow-xs"
+                              : "border-border/70 bg-muted/20 hover:bg-muted/40"
                           }`}
                         >
-                          <ch.icon className="size-4" />
-                        </div>
-                        <div>
-                          <div className="font-bold text-foreground text-xs flex items-center gap-1.5">
-                            {ch.label}
-                            {ch.isPrescribed && (
-                              <span className="rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[9px] font-bold">
-                                Model Prescribed
-                              </span>
-                            )}
+                          <div className="flex items-center gap-2.5">
+                            <div
+                              className={`size-8 rounded-lg grid place-items-center ${
+                                isSelected
+                                  ? "bg-primary text-primary-foreground"
+                                  : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              <ch.icon className="size-4" />
+                            </div>
+                            <div>
+                              <div className="font-bold text-foreground text-xs flex items-center gap-1.5">
+                                {ch.label}
+                                {ch.isPrescribed && (
+                                  <span className="rounded-md bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 px-1.5 py-0.2 text-[9px] font-bold">
+                                    Model Prescribed
+                                  </span>
+                                )}
+                              </div>
+                              <div className="text-[11px] text-muted-foreground mt-0.5">
+                                Success: <strong>{ch.successRate}%</strong> · Response:{" "}
+                                <strong>{ch.responseRate}%</strong>
+                              </div>
+                            </div>
                           </div>
-                          <div className="text-[11px] text-muted-foreground mt-0.5">
-                            Success: <strong>{ch.successRate}%</strong> · Response:{" "}
-                            <strong>{ch.responseRate}%</strong>
+
+                          <div className="text-right shrink-0">
+                            <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                              Permitted
+                            </span>
                           </div>
                         </div>
-                      </div>
-
-                      <div className="text-right shrink-0">
-                        <span className="rounded-full px-2 py-0.5 text-[10px] font-semibold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
-                          Permitted
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Step 2: Channel-Specific Response & Demeanor Selectors */}
-            <div className="rounded-xl border border-border/80 bg-muted/20 p-3.5 space-y-3">
-              <div className="flex items-center justify-between border-b border-border/60 pb-2">
-                <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
-                  <Activity className="size-3" />
-                  {feedbackChannel === "FIELD"
-                    ? "Field Visit Interaction & Response"
-                    : feedbackChannel === "PHONE"
-                      ? "Phone Call Disposition & Response"
-                      : "Mail & Notice Outreach Response"}
-                </span>
-                <span className="text-[10px] text-muted-foreground">Select response parameters</span>
-              </div>
-
-              {/* FIELD VISIT FIELDS */}
-              {feedbackChannel === "FIELD" && (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Customer Presence at Premises
-                    </label>
-                    <select
-                      value={fieldPresence}
-                      onChange={(e) => setFieldPresence(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Customer Met in Person">Customer Met in Person</option>
-                      <option value="Premises Locked / Not Available">Premises Locked / Vacant</option>
-                      <option value="Met Family / Third-Party">Met Family / Third-Party</option>
-                      <option value="Address Shifted / Untraceable">Address Shifted / Untraceable</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Customer Demeanor &amp; Reaction
-                    </label>
-                    <select
-                      value={fieldReaction}
-                      onChange={(e) => setFieldReaction(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Cooperative & Willing to Settle">Cooperative &amp; Willing to Settle</option>
-                      <option value="Claimed Financial Hardship / Job Loss">Claimed Hardship / Job Loss</option>
-                      <option value="Evasive / Asking for Time">Evasive / Asking for Time</option>
-                      <option value="Disputed Balance / Hidden Charges">Disputed Balance / Hidden Charges</option>
-                      <option value="Hostile / Refused Discussion">Hostile / Refused Entry</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Commitment Made during Visit
-                    </label>
-                    <select
-                      value={fieldCommitment}
-                      onChange={(e) => setFieldCommitment(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Immediate Partial Payment Today">Immediate Partial Payment Today</option>
-                      <option value="Promise to Pay (PTP) Agreed">Promise to Pay (PTP) Full Balance</option>
-                      <option value="Loan Restructuring Requested">Loan Restructuring / EMI Relief</option>
-                      <option value="Refused to Commit / Awaiting Notice">Refused to Commit</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* PHONE CALL FIELDS */}
-              {feedbackChannel === "PHONE" && (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Did Customer Pick up Call?
-                    </label>
-                    <select
-                      value={phoneDisposition}
-                      onChange={(e) => setPhoneDisposition(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Connected — Spoke with Customer">Connected — Spoke with Customer</option>
-                      <option value="Answered by Family / Spouse">Answered by Family / Spouse</option>
-                      <option value="Ringing / No Answer">Ringing / No Answer</option>
-                      <option value="Left Voicemail / IVR Dispatched">Left Voicemail / IVR</option>
-                      <option value="Busy / Number Disconnected">Busy / Number Disconnected</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Customer Tone &amp; Reaction
-                    </label>
-                    <select
-                      value={phoneReaction}
-                      onChange={(e) => setPhoneReaction(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Calm & Acknowledged Liability">Calm &amp; Acknowledged Liability</option>
-                      <option value="Distressed / Cash Flow Problem">Distressed / Cash Flow Issue</option>
-                      <option value="Promised Payment via Portal">Promised Payment via Self-Serve</option>
-                      <option value="Disputed Interest / Penalties">Disputed Interest / Penalties</option>
-                      <option value="Aggressive / Disconnected Call">Aggressive / Disconnected Call</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Agreed Next Proceedings
-                    </label>
-                    <select
-                      value={phoneNextStep}
-                      onChange={(e) => setPhoneNextStep(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="PTP Registered on Call">PTP Registered on Call</option>
-                      <option value="Payment Link Dispatched via SMS">Instant Payment Link SMS Dispatched</option>
-                      <option value="Follow-up Call Scheduled (Within 48h)">Follow-up Call Scheduled (48h)</option>
-                      <option value="Escalate to In-Person Field Visit">Escalate to In-Person Field Visit</option>
-                      <option value="Issue Statutory Legal Notice">Issue Statutory Demand Notice</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-
-              {/* MAILS & DIGITAL FIELDS */}
-              {feedbackChannel === "MAIL" && (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Mail &amp; Notice Response
-                    </label>
-                    <select
-                      value={mailStatus}
-                      onChange={(e) => setMailStatus(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Delivered & Link Clicked / Viewed">Delivered &amp; Link Clicked / Viewed</option>
-                      <option value="Delivered — Awaiting Customer Open">Delivered — Awaiting Open</option>
-                      <option value="Customer Replied via Email / Portal">Customer Replied via Email / Portal</option>
-                      <option value="Returned Unclaimed / Mail Bounce">Returned Unclaimed / Mail Bounce</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Customer Reaction / Action
-                    </label>
-                    <select
-                      value={mailReaction}
-                      onChange={(e) => setMailReaction(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Online Self-Service Pay Initiated">Online Self-Service Pay Initiated</option>
-                      <option value="Statement of Account Requested">Statement of Account Requested</option>
-                      <option value="Grievance / Hardship Letter Submitted">Grievance / Hardship Letter Submitted</option>
-                      <option value="No Action Taken / Passive Disregard">No Action Taken / Passive</option>
-                    </select>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Further Operational Proceedings
-                    </label>
-                    <select
-                      value={mailNextStep}
-                      onChange={(e) => setMailNextStep(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="Send Urgent Automated Reminder SMS">Send Urgent Automated Reminder SMS</option>
-                      <option value="Escalate to Outbound Collection Call">Escalate to Outbound Collection Call</option>
-                      <option value="Issue Final Statutory Demand Notice">Issue Final Statutory Demand Notice</option>
-                      <option value="Refer to Skip-Tracing Agency">Refer to Skip-Tracing Bureau</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Step 3: Repayment Reconciliation & DPD Metrics */}
-            <div className="space-y-2">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>2. Repayment Reconciliation &amp; DPD Impact</span>
-                <span className="text-muted-foreground">Live calculated balance</span>
-              </label>
-
-              <div className="grid grid-cols-2 gap-2.5">
-                {/* Total Balance */}
-                <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Total Overdue Exposure
-                  </span>
-                  <div className="text-base font-black text-foreground mt-1">
-                    ${c.exp.toLocaleString()}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">Total Account Liability</span>
-                </div>
-
-                {/* Amount Paid Today */}
-                <div className="rounded-xl border-2 border-primary/40 bg-card p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
-                    Amount Paid Today ($)
-                  </span>
-                  <div className="mt-1 space-y-1.5">
-                    <div className="relative">
-                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-primary" />
-                      <input
-                        type="number"
-                        min={0}
-                        max={c.exp}
-                        value={amountPaidInput === 0 ? "" : amountPaidInput}
-                        placeholder="0"
-                        onChange={(e) => setAmountPaidInput(Math.max(0, Number(e.target.value) || 0))}
-                        className="w-full rounded-lg border border-border bg-muted/40 pl-7 pr-2.5 py-1 text-sm font-black text-foreground focus:outline-hidden focus:border-primary"
-                      />
-                    </div>
-                    {/* Presets */}
-                    <div className="flex items-center gap-1 flex-wrap">
-                      {[0, 500, 1000].map((preset) => (
-                        <button
-                          key={preset}
-                          type="button"
-                          onClick={() => setAmountPaidInput(preset)}
-                          className="rounded-sm bg-muted hover:bg-muted/80 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground cursor-pointer"
-                        >
-                          ${preset}
-                        </button>
-                      ))}
-                      <button
-                        type="button"
-                        onClick={() => setAmountPaidInput(c.exp)}
-                        className="rounded-sm bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold cursor-pointer"
-                      >
-                        Full Cure
-                      </button>
-                    </div>
+                      );
+                    })}
                   </div>
                 </div>
 
-                {/* Remaining Balance */}
-                <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Remaining Balance Left
-                  </span>
-                  <div
-                    className={`text-base font-black mt-1 ${
-                      c.exp - amountPaidInput <= 0
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-foreground"
-                    }`}
-                  >
-                    ${Math.max(0, c.exp - amountPaidInput).toLocaleString()}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    {amountPaidInput > 0
-                      ? `${Math.round((amountPaidInput / c.exp) * 100)}% Cleared`
-                      : "Pending Collection"}
-                  </span>
-                </div>
-
-                {/* DPD Status Impact */}
-                <div className="rounded-xl border border-border/80 bg-muted/20 p-3">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Account DPD Impact
-                  </span>
-                  <div
-                    className={`text-base font-black mt-1 ${
-                      amountPaidInput >= c.exp
-                        ? "text-emerald-600 dark:text-emerald-400"
-                        : "text-amber-600 dark:text-amber-400"
-                    }`}
-                  >
-                    {amountPaidInput >= c.exp ? "0 DPD (Cured)" : `${c.dpd} DPD`}
-                  </div>
-                  <span className="text-[10px] text-muted-foreground">
-                    {amountPaidInput >= c.exp
-                      ? "Fully Resolved ✓"
-                      : amountPaidInput > 0
-                        ? "Partially Serviced"
-                        : riskBucket}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Step 4: Promise-to-Pay (PTP) Commitment */}
-            <div className="rounded-xl border border-border/80 bg-card p-3.5 space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Calendar className="size-3.5 text-primary" />
-                  <span className="text-xs font-bold text-foreground">
-                    Promise-to-Pay (PTP) Commitment
-                  </span>
-                </div>
-                <label className="flex items-center gap-2 text-xs font-bold cursor-pointer">
-                  <span className="text-muted-foreground text-[11px]">PTP Agreed?</span>
-                  <input
-                    type="checkbox"
-                    checked={ptpAgreed}
-                    onChange={(e) => setPtpAgreed(e.target.checked)}
-                    className="size-4 rounded accent-primary cursor-pointer"
-                  />
-                </label>
-              </div>
-
-              {ptpAgreed && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2 border-t border-border/60">
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      PTP Amount ($)
-                    </label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
-                      <input
-                        type="number"
-                        value={ptpAmountInput === 0 ? "" : ptpAmountInput}
-                        placeholder="Amount"
-                        onChange={(e) => setPtpAmountInput(Number(e.target.value) || 0)}
-                        className="w-full rounded-lg border border-border bg-muted/30 pl-7 pr-2.5 py-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      PTP Due Date
-                    </label>
-                    <input
-                      type="date"
-                      value={ptpDateInput}
-                      onChange={(e) => setPtpDateInput(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-muted/30 p-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    />
-                  </div>
-
-                  <div className="space-y-1">
-                    <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Payment Mode
-                    </label>
-                    <select
-                      value={ptpPaymentMode}
-                      onChange={(e) => setPtpPaymentMode(e.target.value)}
-                      className="w-full rounded-lg border border-border bg-muted/30 p-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
-                    >
-                      <option value="UPI / Instant Transfer">UPI / Instant Transfer</option>
-                      <option value="NetBanking / Bank Transfer">NetBanking / NEFT</option>
-                      <option value="Branch Cashier Visit">Branch Cashier Visit</option>
-                      <option value="Field Agent Cash Pickup">Field Agent Cash Pickup</option>
-                      <option value="Post-Dated Cheque (PDC)">Post-Dated Cheque (PDC)</option>
-                    </select>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Step 5: Notes & Remarks */}
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
-                <span>3. Frontline Interaction Notes</span>
-                <span className="text-muted-foreground">Optional remarks</span>
-              </label>
-              <textarea
-                rows={2}
-                value={feedbackNotes}
-                onChange={(e) => setFeedbackNotes(e.target.value)}
-                placeholder="Enter frontline remarks, customer statements, or commitments discussed..."
-                className="w-full rounded-xl border border-border bg-muted/30 p-2.5 text-xs text-foreground focus:outline-hidden focus:border-primary"
-              />
-              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
-                {[
-                  "Salary credited on 5th",
-                  "Promised UPI transfer by 6 PM",
-                  "Met spouse at premises",
-                  "Medical hardship cited",
-                ].map((chip) => (
+                {/* Step 2: Channel-Specific Response & Demeanor Selectors (Interactive Accordion) */}
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2.5">
                   <button
-                    key={chip}
                     type="button"
-                    onClick={() =>
-                      setFeedbackNotes((prev) => (prev ? `${prev} · ${chip}` : chip))
-                    }
-                    className="rounded-md border border-border bg-card hover:bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition cursor-pointer"
+                    onClick={() => setResponseSectionOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between border-b border-border/60 pb-2 cursor-pointer text-left"
                   >
-                    + {chip}
+                    <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary flex items-center gap-1.5">
+                      <Activity className="size-3" />
+                      {feedbackChannel === "FIELD"
+                        ? "Field Visit Interaction & Response"
+                        : feedbackChannel === "PHONE"
+                          ? "Phone Call Disposition & Response"
+                          : "Mail & Notice Outreach Response"}
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold hover:text-foreground">
+                      <span>Parameters</span>
+                      {responseSectionOpen ? (
+                        <ChevronUp className="size-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-3.5 text-muted-foreground" />
+                      )}
+                    </span>
                   </button>
-                ))}
+
+                  {responseSectionOpen && (
+                    <div className="space-y-2 pt-0.5">
+                      {/* FIELD VISIT FIELDS */}
+                      {feedbackChannel === "FIELD" && (
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Customer Presence at Premises
+                            </label>
+                            <select
+                              value={fieldPresence}
+                              onChange={(e) => setFieldPresence(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Customer Met in Person">Customer Met in Person</option>
+                              <option value="Premises Locked / Not Available">Premises Locked / Vacant</option>
+                              <option value="Met Family / Third-Party">Met Family / Third-Party</option>
+                              <option value="Address Shifted / Untraceable">Address Shifted / Untraceable</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Customer Demeanor &amp; Reaction
+                            </label>
+                            <select
+                              value={fieldReaction}
+                              onChange={(e) => setFieldReaction(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Cooperative & Willing to Settle">Cooperative &amp; Willing to Settle</option>
+                              <option value="Claimed Financial Hardship / Job Loss">Claimed Hardship / Job Loss</option>
+                              <option value="Evasive / Asking for Time">Evasive / Asking for Time</option>
+                              <option value="Disputed Balance / Hidden Charges">Disputed Balance / Hidden Charges</option>
+                              <option value="Hostile / Refused Discussion">Hostile / Refused Entry</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Commitment Made during Visit
+                            </label>
+                            <select
+                              value={fieldCommitment}
+                              onChange={(e) => setFieldCommitment(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Immediate Partial Payment Today">Immediate Partial Payment Today</option>
+                              <option value="Promise to Pay (PTP) Agreed">Promise to Pay (PTP) Full Balance</option>
+                              <option value="Loan Restructuring Requested">Loan Restructuring / EMI Relief</option>
+                              <option value="Refused to Commit / Awaiting Notice">Refused to Commit</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* PHONE CALL FIELDS */}
+                      {feedbackChannel === "PHONE" && (
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Did Customer Pick up Call?
+                            </label>
+                            <select
+                              value={phoneDisposition}
+                              onChange={(e) => setPhoneDisposition(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Connected — Spoke with Customer">Connected — Spoke with Customer</option>
+                              <option value="Answered by Family / Spouse">Answered by Family / Spouse</option>
+                              <option value="Ringing / No Answer">Ringing / No Answer</option>
+                              <option value="Left Voicemail / IVR Dispatched">Left Voicemail / IVR</option>
+                              <option value="Busy / Number Disconnected">Busy / Number Disconnected</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Customer Tone &amp; Reaction
+                            </label>
+                            <select
+                              value={phoneReaction}
+                              onChange={(e) => setPhoneReaction(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Calm & Acknowledged Liability">Calm &amp; Acknowledged Liability</option>
+                              <option value="Distressed / Cash Flow Problem">Distressed / Cash Flow Issue</option>
+                              <option value="Promised Payment via Portal">Promised Payment via Self-Serve</option>
+                              <option value="Disputed Interest / Penalties">Disputed Interest / Penalties</option>
+                              <option value="Aggressive / Disconnected Call">Aggressive / Disconnected Call</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Agreed Next Proceedings
+                            </label>
+                            <select
+                              value={phoneNextStep}
+                              onChange={(e) => setPhoneNextStep(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="PTP Registered on Call">PTP Registered on Call</option>
+                              <option value="Payment Link Dispatched via SMS">Instant Payment Link SMS Dispatched</option>
+                              <option value="Follow-up Call Scheduled (Within 48h)">Follow-up Call Scheduled (48h)</option>
+                              <option value="Escalate to In-Person Field Visit">Escalate to In-Person Field Visit</option>
+                              <option value="Issue Statutory Legal Notice">Issue Statutory Demand Notice</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* MAILS & DIGITAL FIELDS */}
+                      {feedbackChannel === "MAIL" && (
+                        <div className="space-y-2">
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Mail &amp; Notice Response
+                            </label>
+                            <select
+                              value={mailStatus}
+                              onChange={(e) => setMailStatus(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Delivered & Link Clicked / Viewed">Delivered &amp; Link Clicked / Viewed</option>
+                              <option value="Delivered — Awaiting Customer Open">Delivered — Awaiting Open</option>
+                              <option value="Customer Replied via Email / Portal">Customer Replied via Email / Portal</option>
+                              <option value="Returned Unclaimed / Mail Bounce">Returned Unclaimed / Mail Bounce</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Customer Reaction / Action
+                            </label>
+                            <select
+                              value={mailReaction}
+                              onChange={(e) => setMailReaction(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Online Self-Service Pay Initiated">Online Self-Service Pay Initiated</option>
+                              <option value="Statement of Account Requested">Statement of Account Requested</option>
+                              <option value="Grievance / Hardship Letter Submitted">Grievance / Hardship Letter Submitted</option>
+                              <option value="No Action Taken / Passive Disregard">No Action Taken / Passive</option>
+                            </select>
+                          </div>
+
+                          <div className="space-y-1">
+                            <label className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">
+                              Further Operational Proceedings
+                            </label>
+                            <select
+                              value={mailNextStep}
+                              onChange={(e) => setMailNextStep(e.target.value)}
+                              className="w-full rounded-lg border border-border bg-card p-2 text-xs font-semibold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                            >
+                              <option value="Send Urgent Automated Reminder SMS">Send Urgent Automated Reminder SMS</option>
+                              <option value="Escalate to Outbound Collection Call">Escalate to Outbound Collection Call</option>
+                              <option value="Issue Final Statutory Demand Notice">Issue Final Statutory Demand Notice</option>
+                              <option value="Refer to Skip-Tracing Agency">Refer to Skip-Tracing Bureau</option>
+                            </select>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* RIGHT COLUMN: Repayment Reconciliation, PTP Commitment & Notes */}
+              <div className="space-y-3">
+                {/* Step 3: Repayment Reconciliation & DPD Metrics */}
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center justify-between">
+                    <span>2. Repayment Reconciliation &amp; DPD Impact</span>
+                    <span className="text-muted-foreground">Live calculated balance</span>
+                  </label>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    {/* Total Balance */}
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Total Overdue Exposure
+                      </span>
+                      <div className="text-base font-black text-foreground mt-0.5">
+                        ${c.exp.toLocaleString()}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">Total Account Liability</span>
+                    </div>
+
+                    {/* Amount Paid Today */}
+                    <div className="rounded-xl border-2 border-primary/40 bg-card p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-primary block">
+                        Amount Paid Today ($)
+                      </span>
+                      <div className="mt-1 space-y-1.5">
+                        <div className="relative">
+                          <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3.5 text-primary" />
+                          <input
+                            type="number"
+                            min={0}
+                            max={c.exp}
+                            value={amountPaidInput === 0 ? "" : amountPaidInput}
+                            placeholder="0"
+                            onChange={(e) => setAmountPaidInput(Math.max(0, Number(e.target.value) || 0))}
+                            className="w-full rounded-lg border border-border bg-muted/40 pl-7 pr-2.5 py-1 text-sm font-black text-foreground focus:outline-hidden focus:border-primary"
+                          />
+                        </div>
+                        {/* Presets */}
+                        <div className="flex items-center gap-1 flex-wrap">
+                          {[0, 500, 1000].map((preset) => (
+                            <button
+                              key={preset}
+                              type="button"
+                              onClick={() => setAmountPaidInput(preset)}
+                              className="rounded-sm bg-muted hover:bg-muted/80 px-1.5 py-0.5 text-[9px] font-bold text-muted-foreground cursor-pointer"
+                            >
+                              ${preset}
+                            </button>
+                          ))}
+                          <button
+                            type="button"
+                            onClick={() => setAmountPaidInput(c.exp)}
+                            className="rounded-sm bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 px-1.5 py-0.5 text-[9px] font-bold cursor-pointer"
+                          >
+                            Full Cure
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Remaining Balance */}
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Remaining Balance Left
+                      </span>
+                      <div
+                        className={`text-base font-black mt-0.5 ${
+                          c.exp - amountPaidInput <= 0
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-foreground"
+                        }`}
+                      >
+                        ${Math.max(0, c.exp - amountPaidInput).toLocaleString()}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {amountPaidInput > 0
+                          ? `${Math.round((amountPaidInput / c.exp) * 100)}% Cleared`
+                          : "Pending Collection"}
+                      </span>
+                    </div>
+
+                    {/* DPD Status Impact */}
+                    <div className="rounded-xl border border-border/80 bg-muted/20 p-2.5">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground block">
+                        Account DPD Impact
+                      </span>
+                      <div
+                        className={`text-base font-black mt-0.5 ${
+                          amountPaidInput >= c.exp
+                            ? "text-emerald-600 dark:text-emerald-400"
+                            : "text-amber-600 dark:text-amber-400"
+                        }`}
+                      >
+                        {amountPaidInput >= c.exp ? "0 DPD (Cured)" : `${c.dpd} DPD`}
+                      </div>
+                      <span className="text-[10px] text-muted-foreground">
+                        {amountPaidInput >= c.exp
+                          ? "Fully Resolved ✓"
+                          : amountPaidInput > 0
+                            ? "Partially Serviced"
+                            : riskBucket}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Step 4: Promise-to-Pay (PTP) Commitment (Collapsible with arrow) */}
+                <div className="rounded-xl border border-border/80 bg-card p-3 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <button
+                      type="button"
+                      onClick={() => setPtpAgreed((prev) => !prev)}
+                      className="flex items-center gap-2 text-left cursor-pointer group"
+                    >
+                      <Calendar className="size-3.5 text-primary" />
+                      <span className="text-xs font-bold text-foreground group-hover:text-primary transition">
+                        Promise-to-Pay (PTP) Commitment
+                      </span>
+                      {ptpAgreed ? (
+                        <ChevronUp className="size-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-3.5 text-muted-foreground" />
+                      )}
+                    </button>
+                    <label className="flex items-center gap-1.5 text-xs font-bold cursor-pointer">
+                      <span className="text-muted-foreground text-[11px]">PTP Agreed?</span>
+                      <input
+                        type="checkbox"
+                        checked={ptpAgreed}
+                        onChange={(e) => setPtpAgreed(e.target.checked)}
+                        className="size-4 rounded accent-primary cursor-pointer"
+                      />
+                    </label>
+                  </div>
+
+                  {ptpAgreed && (
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-border/60">
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          PTP Amount ($)
+                        </label>
+                        <div className="relative">
+                          <DollarSign className="absolute left-2.5 top-1/2 -translate-y-1/2 size-3 text-muted-foreground" />
+                          <input
+                            type="number"
+                            value={ptpAmountInput === 0 ? "" : ptpAmountInput}
+                            placeholder="Amount"
+                            onChange={(e) => setPtpAmountInput(Number(e.target.value) || 0)}
+                            className="w-full rounded-lg border border-border bg-muted/30 pl-7 pr-2.5 py-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary"
+                          />
+                        </div>
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          PTP Due Date
+                        </label>
+                        <input
+                          type="date"
+                          value={ptpDateInput}
+                          onChange={(e) => setPtpDateInput(e.target.value)}
+                          className="w-full rounded-lg border border-border bg-muted/30 p-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                        />
+                      </div>
+
+                      <div className="space-y-1">
+                        <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
+                          Payment Mode
+                        </label>
+                        <select
+                          value={ptpPaymentMode}
+                          onChange={(e) => setPtpPaymentMode(e.target.value)}
+                          className="w-full rounded-lg border border-border bg-muted/30 p-1.5 text-xs font-bold text-foreground focus:outline-hidden focus:border-primary cursor-pointer"
+                        >
+                          <option value="UPI / Instant Transfer">UPI / Instant Transfer</option>
+                          <option value="NetBanking / Bank Transfer">NetBanking / NEFT</option>
+                          <option value="Branch Cashier Visit">Branch Cashier Visit</option>
+                          <option value="Field Agent Cash Pickup">Field Agent Cash Pickup</option>
+                          <option value="Post-Dated Cheque (PDC)">Post-Dated Cheque (PDC)</option>
+                        </select>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Step 5: Notes & Remarks (Collapsible with arrow) */}
+                <div className="rounded-xl border border-border/80 bg-muted/20 p-3 space-y-2">
+                  <button
+                    type="button"
+                    onClick={() => setNotesOpen((prev) => !prev)}
+                    className="w-full flex items-center justify-between cursor-pointer text-left"
+                  >
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+                      <FileText className="size-3 text-primary" />
+                      <span>3. Frontline Interaction Notes</span>
+                      <span className="text-[9.5px] font-normal text-muted-foreground/80">(Optional)</span>
+                    </span>
+                    <span className="flex items-center gap-1 text-[10px] text-muted-foreground font-semibold hover:text-foreground">
+                      <span>Remarks</span>
+                      {notesOpen ? (
+                        <ChevronUp className="size-3.5 text-muted-foreground" />
+                      ) : (
+                        <ChevronDown className="size-3.5 text-muted-foreground" />
+                      )}
+                    </span>
+                  </button>
+
+                  {notesOpen && (
+                    <div className="space-y-2 pt-0.5">
+                      <textarea
+                        rows={2}
+                        value={feedbackNotes}
+                        onChange={(e) => setFeedbackNotes(e.target.value)}
+                        placeholder="Enter frontline remarks, customer statements, or commitments discussed..."
+                        className="w-full rounded-xl border border-border bg-card p-2 text-xs text-foreground focus:outline-hidden focus:border-primary"
+                      />
+                      <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                        {[
+                          "Salary credited on 5th",
+                          "Promised UPI transfer by 6 PM",
+                          "Met spouse at premises",
+                          "Medical hardship cited",
+                        ].map((chip) => (
+                          <button
+                            key={chip}
+                            type="button"
+                            onClick={() =>
+                              setFeedbackNotes((prev) => (prev ? `${prev} · ${chip}` : chip))
+                            }
+                            className="rounded-md border border-border bg-card hover:bg-muted px-2 py-0.5 text-[10px] font-semibold text-muted-foreground transition cursor-pointer"
+                          >
+                            + {chip}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             </div>
 

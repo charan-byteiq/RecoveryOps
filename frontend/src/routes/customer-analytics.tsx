@@ -7,6 +7,8 @@ import {
   ArrowRight,
   ListChecks,
 } from "lucide-react";
+import { AnimatedKpi } from "@/components/ui/animated-kpi";
+import { useScrollInView } from "@/hooks/use-scroll-in-view";
 import {
   CUSTOMERS,
   BRANCH_METADATA,
@@ -43,14 +45,22 @@ interface BranchAggregate {
 function BranchCard({
   b,
   onSelect,
+  index = 0,
 }: {
   b: BranchAggregate;
   onSelect: () => void;
+  index?: number;
 }) {
+  const { ref, isInView } = useScrollInView({ threshold: 0.1, triggerOnce: false });
+
   return (
     <div
+      ref={ref as any}
       onClick={onSelect}
-      className={`cursor-pointer group relative overflow-hidden rounded-2xl border border-border/80 bg-card hover:bg-card/95 hover:shadow-md transition-all duration-300 p-6 flex flex-col justify-between h-full ${b.meta.borderGlow}`}
+      className={`cursor-pointer group relative overflow-hidden rounded-2xl border border-border/80 bg-card hover:bg-card/95 hover:shadow-md transition-all duration-500 p-6 flex flex-col justify-between h-full ${b.meta.borderGlow} ${
+        isInView ? "opacity-100 translate-y-0" : "opacity-0 translate-y-3"
+      }`}
+      style={{ transitionDelay: `${index * 80}ms` }}
     >
       {/* Top Accent Strip */}
       <div
@@ -88,14 +98,14 @@ function BranchCard({
           </p>
         </div>
 
-        {/* 2 CLEAN DPD METRIC CARDS */}
+        {/* 2 CLEAN DPD METRIC CARDS WITH ANIMATED COUNT-UP */}
         <div className="grid grid-cols-2 gap-3 pt-2">
           <div className="rounded-xl border border-border/80 bg-muted/40 p-4 flex flex-col justify-between">
             <div className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">
               DPD Amount
             </div>
             <div className="text-xl font-black text-foreground mt-1.5 tracking-tight">
-              ${b.totalExp.toLocaleString()}
+              <AnimatedKpi value={b.totalExp} prefix="$" />
             </div>
             <div className="text-[10.5px] font-medium text-muted-foreground mt-1.5">
               Active Delinquency
@@ -107,7 +117,7 @@ function BranchCard({
               DPD Accounts
             </div>
             <div className="text-xl font-black text-foreground mt-1.5 tracking-tight">
-              {b.customers.length} Accounts
+              <AnimatedKpi value={b.customers.length} suffix=" Accounts" />
             </div>
             <div className="text-[10.5px] font-semibold text-emerald-600 dark:text-emerald-400 mt-1.5">
               Priority Worklist
@@ -123,7 +133,7 @@ function BranchCard({
                 Recovery Attainment
               </div>
               <div className="text-sm font-black text-foreground mt-0.5">
-                ${b.recoveredAmt.toLocaleString()}{" "}
+                <AnimatedKpi value={b.recoveredAmt} prefix="$" />{" "}
                 <span className="text-[11px] font-medium text-muted-foreground">recovered</span>
               </div>
             </div>
@@ -134,11 +144,11 @@ function BranchCard({
             </div>
           </div>
 
-          {/* Attainment Fill Bar */}
+          {/* Attainment Fill Bar with Smooth Growth Animation */}
           <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
             <div
-              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.max(0, b.attainmentPct))}%` }}
+              className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-primary transition-all duration-1000 ease-out"
+              style={{ width: isInView ? `${Math.min(100, Math.max(0, b.attainmentPct))}%` : "0%" }}
             />
           </div>
         </div>
@@ -218,9 +228,6 @@ function CustomerBranchOverview() {
           >
             <ListChecks className="size-3.5" /> Full Priority Worklist
           </Link>
-          <span className="hidden sm:inline-block rounded-full border bg-card px-3 py-1 text-xs text-muted-foreground">
-            Refreshed: Oct 29, 2026
-          </span>
         </div>
       }
     >
@@ -251,10 +258,11 @@ function CustomerBranchOverview() {
 
         {/* 6 BRANCHES BALANCED & FILLED GRID */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {branchAggregates.map((b) => (
+          {branchAggregates.map((b, idx) => (
             <BranchCard
               key={b.code}
               b={b}
+              index={idx}
               onSelect={() => {
                 setStoredCustomerBranch(b.code);
                 navigate({ to: "/worklist", search: { branch: b.code } });

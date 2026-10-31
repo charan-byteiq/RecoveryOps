@@ -285,10 +285,6 @@ export function Worklist() {
               ))}
             </select>
           </div>
-
-          <span className="hidden sm:inline-block rounded-full border border-slate-300 dark:border-slate-700 bg-card px-3 py-1 text-xs text-muted-foreground">
-            Refreshed: Oct 29, 2026
-          </span>
         </div>
       }
     >
